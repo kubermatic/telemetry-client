@@ -1,5 +1,5 @@
 /*
-Copyright YEAR The Telemetry Authors.
+Copyright 2020 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,3 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package report
+
+import (
+	"encoding/json"
+)
+
+type Report interface {
+	ListRecords() []json.RawMessage
+	SetLocation(long, lat float64)
+}
+
+type Version struct {
+	Version string `json:"version"`
+}
