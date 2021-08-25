@@ -60,7 +60,7 @@ type Seed struct {
 	Datacenters []Datacenter `json:"datacenters,omitempty"`
 }
 
-// DatacenterSpec specifies the data for a datacenter.
+// Datacenter specifies the data for a datacenter.
 type Datacenter struct {
 	UUID string `json:"uuid,omitempty"`
 	// Country of the seed as ISO-3166 two-letter code, e.g. DE or UK.
