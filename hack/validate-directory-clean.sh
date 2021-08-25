@@ -14,16 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
 set -o pipefail
 
-cd $(dirname $0)/..
-
-boilerplate \
-  -boilerplates hack/boilerplate/ \
-  -exclude pkg/agent/kubernetes/v1/record.go \
-  -exclude pkg/agent/kubernetes/kubernetes.go \
-  -exclude config/agent/kubernetes/rbac/role.yaml \
-  -exclude config/agent/kubermatic/rbac/role.yaml \
-  -verbose
+if [[ -n "$(git status --porcelain)" ]]; then
+  git diff
+  echo "Some files have changed after run make generate, please make sure to run make generate before commit changes";
+  exit 1
+fi

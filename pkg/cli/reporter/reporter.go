@@ -1,5 +1,5 @@
 /*
-Copyright YEAR The Telemetry Authors.
+Copyright 2020 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,3 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package reporter
+
+import (
+	"github.com/spf13/cobra"
+)
+
+func NewReporterCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Args:  cobra.NoArgs,
+		Use:   "reporter",
+		Short: "Telemetry reporter",
+	}
+
+	cmd.AddCommand(
+		newStdoutReporterCommand(),
+		newHTTPReporterCommand(),
+	)
+	return cmd
+}

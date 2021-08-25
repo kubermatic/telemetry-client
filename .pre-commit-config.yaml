@@ -1,0 +1,54 @@
+# Copyright 2021 The Telemetry Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+exclude: "vendor/ | *.deepcopy.go"
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.4.0
+    hooks:
+      - id: check-added-large-files
+        exclude: "config/swagger/.*"
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: pretty-format-json
+        args:
+          - --autofix
+      - id: trailing-whitespace
+  - repo: git://github.com/dnephin/pre-commit-golang
+    rev: v0.3.5
+    hooks:
+      - id: go-fmt
+  - repo: local
+    hooks:
+      - id: goimports
+        name: goimports
+        entry: goimports -local github.com/kubermatic/telemetry-client -w
+        language: system
+        types: [go]
+      - id: LICENSE
+        name: LICENSE
+        language: system
+        entry: bash ./hack/verify-boilerplate.sh
+        exclude: ".*"
+        always_run: true
+      - id: go-mod-tidy
+        name: go-mod-tidy
+        entry: make tidy
+        language: system
+        exclude: ".*"
+        always_run: true
