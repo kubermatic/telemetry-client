@@ -243,15 +243,20 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 	var mla MLASettings
 	mlaSetting := kn.Spec.MLA
 	if mlaSetting != nil {
-		mla = MLASettings(*mlaSetting)
+		mla.MonitoringEnabled = mlaSetting.MonitoringEnabled
+		mla.LoggingEnabled = mlaSetting.LoggingEnabled
 	}
 
+	etcdSize := 0
+	if kn.Spec.ComponentsOverride.Etcd.ClusterSize != nil {
+		etcdSize = int(*kn.Spec.ComponentsOverride.Etcd.ClusterSize)
+	}
 	cluster := Cluster{
 		UUID:                    generateUUID(kn.Name),
 		SeedUUID:                generateUUID(seedName),
 		ProjectUUID:             generateUUID(kn.Labels[kubermaticv1.ProjectIDLabelKey]),
 		ExposeStrategy:          string(kn.Spec.ExposeStrategy),
-		EtcdClusterSize:         kn.Spec.ComponentsOverride.Etcd.ClusterSize,
+		EtcdClusterSize:         etcdSize,
 		KubernetesServerVersion: kn.Spec.Version.String(),
 		KubermaticVersion:       kn.Status.KubermaticVersion,
 		Cloud: Cloud{
