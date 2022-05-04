@@ -24,9 +24,7 @@ presubmits:
           command:
             - make
             - test
-          env:
-            - name: GO111MODULE
-              value: "on"
+
   - name: pull-telemetry-lint
     always_run: true
     decorate: true
@@ -38,9 +36,7 @@ presubmits:
           command:
             - make
             - lint
-          env:
-            - name: GO111MODULE
-              value: "on"
+
 postsubmits:
   - name: post-telemetry-test-image
     decorate: true
@@ -56,8 +52,6 @@ postsubmits:
             - make
             - push-image-test
           env:
-            - name: GO111MODULE
-              value: "on"
             - name: QUAY_IO_USERNAME
               valueFrom:
                 secretKeyRef:
