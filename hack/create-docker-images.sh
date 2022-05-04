@@ -17,8 +17,9 @@
 set -euo pipefail
 
 GIT_HEAD_HASH="$(git rev-parse HEAD)"
+GIT_HEAD_TAG="$(git tag -l "$PULL_BASE_REF")"
 GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-TAGS="$GIT_HEAD_HASH"
+TAGS="$GIT_HEAD_HASH $GIT_HEAD_TAG"
 
 # we only want to create the "latest" tag if we're building the main branch
 if [ "$GIT_BRANCH" == "main" ]; then
@@ -45,7 +46,7 @@ PRIMARY_TAG=localbuild
 make build docker-build TAGS="${PRIMARY_TAG}"
 
 # for each given tag, tag and push the image
-for TAG in "$TAGS"; do
+for TAG in $TAGS; do
   if [ -z "$TAG" ]; then
     continue
   fi
