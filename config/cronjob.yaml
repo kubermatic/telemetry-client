@@ -31,6 +31,8 @@ spec:
           initContainers:
             - name: kubernetes-agent
               image: quay.io/kubermatic/telemetry:v0.1.0
+              command:
+                - kubernetes-agent
               args:
                 - "--record-dir=$(RECORD_DIR)"
               env:
@@ -48,6 +50,8 @@ spec:
                   memory: 100Mi
             - name: kubermatic-agent
               image: quay.io/kubermatic/telemetry:v0.1.0
+              command:
+                - kubermatic-agent
               args:
                 - "--record-dir=$(RECORD_DIR)"
               env:
@@ -66,6 +70,8 @@ spec:
           containers:
             - name: reporter
               image: quay.io/kubermatic/telemetry:v0.1.0
+              command:
+                - reporter
               args:
                 - "http"
                 - "--client-uuid=$(CLIENT_UUID)"
