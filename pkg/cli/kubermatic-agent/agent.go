@@ -17,16 +17,15 @@ limitations under the License.
 package kubermaticagent
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/spf13/cobra"
 
 	k8cv1 "github.com/kubermatic/telemetry-client/pkg/agent/kubermatic/v1"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
+	"github.com/spf13/cobra"
 	kubermaticv1 "k8c.io/kubermatic/v2/pkg/crd/kubermatic/v1"
 	operatorv1alpha1 "k8c.io/kubermatic/v2/pkg/crd/operator/v1alpha1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
@@ -54,21 +53,20 @@ func NewKubermaticAgentCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "kubermatic-agent",
-		Short: "Kubermatic Telemetry kubermaticAgent",
+		Short: "Kubermatic Telemetry Agent",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags)
-
+			return runE(cmd.Context(), flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory to save all records files from agents.")
+	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory to save all records files from agents")
 	return cmd
 }
 
-func runE(flags *flags) error {
+func runE(ctx context.Context, flags *flags) error {
 	cfg := ctrl.GetConfigOrDie()
 	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 	if err != nil {
-		return fmt.Errorf("creating rest mapper: %w", err)
+		return fmt.Errorf("failed to create rest mapper: %w", err)
 	}
 
 	c, err := client.New(cfg, client.Options{
@@ -76,14 +74,16 @@ func runE(flags *flags) error {
 		Mapper: mapper,
 	})
 	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
+		return fmt.Errorf("failed to create client: %w", err)
 	}
+
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
-		return fmt.Errorf("cannot create discovery client: %w", err)
+		return fmt.Errorf("failed to create discovery client: %w", err)
 	}
 
 	dataStore := datastore.NewFileStore(flags.recordDir)
 	agent := k8cv1.NewAgent(c, discoveryClient, dataStore)
-	return agent.Collect()
+
+	return agent.Collect(ctx)
 }

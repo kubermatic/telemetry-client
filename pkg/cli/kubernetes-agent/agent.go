@@ -17,7 +17,11 @@ limitations under the License.
 package agent
 
 import (
+	"context"
 	"fmt"
+
+	k8sagentv1 "github.com/kubermatic/telemetry-client/pkg/agent/kubernetes/v1"
+	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,9 +31,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-
-	k8sagentv1 "github.com/kubermatic/telemetry-client/pkg/agent/kubernetes/v1"
-	"github.com/kubermatic/telemetry-client/pkg/datastore"
 )
 
 var scheme = runtime.NewScheme()
@@ -48,34 +49,37 @@ func NewKubernetesAgentCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "kubernetes-agent",
-		Short: "Kubernetes Telemetry kubernetesAgent",
+		Short: "Kubernetes Telemetry Agent",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags)
-
+			return runE(cmd.Context(), flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory to save all records files from agents.")
+	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory to save all records files from agents")
 	return cmd
 }
 
-func runE(flags *flags) error {
+func runE(ctx context.Context, flags *flags) error {
 	cfg := ctrl.GetConfigOrDie()
 	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 	if err != nil {
-		return fmt.Errorf("creating rest mapper: %w", err)
+		return fmt.Errorf("failed to create rest mapper: %w", err)
 	}
+
 	c, err := client.New(cfg, client.Options{
 		Scheme: scheme,
 		Mapper: mapper,
 	})
 	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
+		return fmt.Errorf("failed to create client: %w", err)
 	}
+
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
-		return fmt.Errorf("cannot create discovery client: %w", err)
+		return fmt.Errorf("failed to create discovery client: %w", err)
 	}
+
 	dataStore := datastore.NewFileStore(flags.recordDir)
 	agent := k8sagentv1.NewAgent(c, discoveryClient, dataStore)
-	return agent.Collect()
+
+	return agent.Collect(ctx)
 }

@@ -1,5 +1,7 @@
+//go:build tools
+
 /*
-Copyright 2020 The Telemetry Authors.
+Copyright 2022 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,27 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package datastore
+package tools
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )
-
-type stdout struct {
-}
-
-func NewStdout() DataStore {
-	return stdout{}
-}
-
-func (f stdout) Store(ctx context.Context, data json.RawMessage) error {
-	var j bytes.Buffer
-	if err := json.Indent(&j, data, "", "\t"); err != nil {
-		return err
-	}
-	fmt.Println(j.String())
-	return nil
-}

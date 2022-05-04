@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"log"
 	"os"
 
 	kubernetesagent "github.com/kubermatic/telemetry-client/pkg/cli/kubernetes-agent"
@@ -24,6 +25,7 @@ import (
 
 func main() {
 	if err := kubernetesagent.NewKubernetesAgentCommand().Execute(); err != nil {
+		log.Printf("Failed: %v", err)
 		os.Exit(1)
 	}
 }

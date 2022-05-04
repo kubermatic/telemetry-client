@@ -18,6 +18,7 @@ package datastore
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 )
@@ -28,14 +29,20 @@ type httpStore struct {
 
 func NewHTTPStore(endpoint string) DataStore {
 	return httpStore{url: endpoint}
-
 }
 
-func (s httpStore) Store(data json.RawMessage) error {
-	resp, err := http.Post(s.url, "application/json", bytes.NewBuffer(data))
+func (s httpStore) Store(ctx context.Context, data json.RawMessage) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", s.url, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
 	return nil
 }

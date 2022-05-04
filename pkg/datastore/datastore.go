@@ -17,9 +17,10 @@ limitations under the License.
 package datastore
 
 import (
+	"context"
 	"encoding/json"
 )
 
 type DataStore interface {
-	Store(data json.RawMessage) error
+	Store(ctx context.Context, data json.RawMessage) error
 }

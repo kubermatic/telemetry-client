@@ -1,4 +1,6 @@
-# Copyright 2021 The Telemetry Authors.
+#!/usr/bin/env bash
+
+# Copyright 2022 The Telemetry Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kubermatic-agent-rolebinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubermatic-agent-role
-subjects:
-  - kind: ServiceAccount
-    name: agent-sa
+set -euo pipefail
+
+cd $(dirname $0)/..
+
+echo "Generating RBAC..."
+cp config/templates/rbac.yaml config/rbac.yaml
+
+go run sigs.k8s.io/controller-tools/cmd/controller-gen \
+  rbac:roleName=kubermatic-agent-role \
+  paths="./pkg/agent/kubermatic/..." \
+  output:stdout >> config/rbac.yaml
+
+go run sigs.k8s.io/controller-tools/cmd/controller-gen \
+  rbac:roleName=kubernetes-agent-role \
+  paths="./pkg/agent/kubernetes/..." \
+  output:stdout >> config/rbac.yaml

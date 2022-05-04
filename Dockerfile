@@ -1,4 +1,4 @@
-# Copyright 2021 The Telemetry Authors.
+# Copyright 2022 The Telemetry Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/distroless/static:nonroot
-WORKDIR /
-COPY reporter .
-USER nonroot:nonroot
+FROM alpine:3.13
+LABEL maintainer="support@kubermatic.com"
 
-ENTRYPOINT ["/reporter"]
+COPY ./_build/kubermatic-agent \
+     ./_build/kubernetes-agent \
+     ./_build/reporter \
+     /usr/local/bin/
+
+USER nobody

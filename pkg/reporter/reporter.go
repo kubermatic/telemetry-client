@@ -16,6 +16,8 @@ limitations under the License.
 
 package reporter
 
+import "context"
+
 type Reporter interface {
-	Report() error
+	Report(ctx context.Context) error
 }

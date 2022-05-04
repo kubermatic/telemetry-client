@@ -22,13 +22,13 @@ import (
 	"sort"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/version"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/kubermatic/telemetry-client/pkg/agent"
 	"github.com/kubermatic/telemetry-client/pkg/agent/kubernetes"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/version"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type serverVersionInfo interface {
@@ -51,7 +51,7 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 
-func (a kubernetesAgent) Collect() error {
+func (a kubernetesAgent) Collect(ctx context.Context) error {
 	serverVersion, err := a.ServerVersion()
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (a kubernetesAgent) Collect() error {
 	}
 
 	knodes := &corev1.NodeList{}
-	if err := a.List(context.Background(), knodes); err != nil {
+	if err := a.List(ctx, knodes); err != nil {
 		return err
 	}
 	for _, knode := range knodes.Items {
@@ -81,7 +81,7 @@ func (a kubernetesAgent) Collect() error {
 	if err != nil {
 		return err
 	}
-	return a.dataStore.Store(data)
+	return a.dataStore.Store(ctx, data)
 }
 
 func nodeFromKubeNode(kn corev1.Node) (Node, error) {
@@ -117,8 +117,8 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 
 func getID(kn corev1.Node) (string, error) {
 	// We don't want to report the node's Name - that is Personally Identifiable Information.
-	// The MachineID is apparently not always populated and SystemUUID is ill-defined.  Let's
-	// just hash them all together.  It should be stable, and this reduces risk
+	// The MachineID is apparently not always populated and SystemUUID is ill-defined. Let's
+	// just hash them all together. It should be stable, and this reduces risk
 	// of PII leakage.
 	return agent.HashOf(kn.Name + kn.Status.NodeInfo.MachineID + kn.Status.NodeInfo.SystemUUID)
 }

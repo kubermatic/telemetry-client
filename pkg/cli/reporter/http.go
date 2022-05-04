@@ -19,13 +19,13 @@ package reporter
 import (
 	"os"
 
+	"github.com/kubermatic/telemetry-client/pkg/datastore"
+	reporterv1 "github.com/kubermatic/telemetry-client/pkg/reporter/v1"
+
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-
-	"github.com/kubermatic/telemetry-client/pkg/datastore"
-	reporterv1 "github.com/kubermatic/telemetry-client/pkg/reporter/v1"
 )
 
 var scheme = runtime.NewScheme()
@@ -54,11 +54,11 @@ func newHTTPReporterCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return reporter.Report()
+			return reporter.Report(cmd.Context())
 		},
 	}
-	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory for reporter to read reports.")
-	cmd.Flags().StringVar(&flags.url, "url", "", "the directory for reporter to read reports.")
-	cmd.Flags().StringVar(&flags.clientUUID, "client-uuid", os.Getenv("CLIENT_UUID"), "the client uuid of this reporter.")
+	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory for reporter to read reports")
+	cmd.Flags().StringVar(&flags.url, "url", "", "the URL to push reports to")
+	cmd.Flags().StringVar(&flags.clientUUID, "client-uuid", os.Getenv("CLIENT_UUID"), "the client UUID of this reporter")
 	return cmd
 }

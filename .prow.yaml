@@ -62,7 +62,7 @@ postsubmits:
                 secretKeyRef:
                   name: kubermatic-quay.io
                   key: password
-          # docker needs privileged mode
+          # docker-in-docker needs privileged mode
           securityContext:
             privileged: true
           resources:

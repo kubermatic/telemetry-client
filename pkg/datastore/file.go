@@ -17,6 +17,7 @@ limitations under the License.
 package datastore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -31,10 +32,9 @@ type fileStore struct {
 
 func NewFileStore(directory string) DataStore {
 	return fileStore{directory: directory}
-
 }
 
-func (s fileStore) Store(data json.RawMessage) error {
+func (s fileStore) Store(ctx context.Context, data json.RawMessage) error {
 	info, err := os.Stat(s.directory)
 	if err != nil {
 		return err
@@ -44,16 +44,19 @@ func (s fileStore) Store(data json.RawMessage) error {
 	}
 
 	// We need to provide a different Seed every time when generating a new file, otherwise, it will use the default Seed,
-	//which will provide a deterministic file name every time, and this will cause data overwriting.
+	// which will provide a deterministic file name every time, and this will cause data overwriting.
 	rand.Seed(time.Now().UnixNano())
 	filename := filepath.Join(s.directory, fmt.Sprintf("record-%s.json", fmt.Sprint(rand.Uint64())))
+
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+
 	if _, err := f.Write(data); err != nil {
 		return err
 	}
+
 	return nil
 }

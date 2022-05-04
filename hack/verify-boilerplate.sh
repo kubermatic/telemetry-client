@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
+set -euo pipefail
 
 cd $(dirname $0)/..
 
@@ -25,5 +23,4 @@ boilerplate \
   -exclude pkg/agent/kubernetes/v1/record.go \
   -exclude pkg/agent/kubernetes/kubernetes.go \
   -exclude config/agent/kubernetes/rbac/role.yaml \
-  -exclude config/agent/kubermatic/rbac/role.yaml \
-  -verbose
+  -exclude config/agent/kubermatic/rbac/role.yaml

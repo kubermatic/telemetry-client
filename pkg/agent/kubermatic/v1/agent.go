@@ -22,22 +22,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/kubermatic/telemetry-client/pkg/agent"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
-	"k8c.io/kubermatic/v2/pkg/controller/operator/common"
-	kubermaticv1 "k8c.io/kubermatic/v2/pkg/crd/kubermatic/v1"
-	operatorv1alpha1 "k8c.io/kubermatic/v2/pkg/crd/operator/v1alpha1"
+	"github.com/google/uuid"
+	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
+	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
 	"k8c.io/kubermatic/v2/pkg/provider"
-
 	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	uuidSpace = "kubermatic"
 )
 
 type serverVersionInfo interface {
@@ -58,12 +51,10 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 	}
 }
 
-// +kubebuilder:rbac:groups="kubermatic.k8s.io",resources=seeds;clusters;users;projects;usersshkeies,verbs=list
+// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=seeds;clusters;users;projects;usersshkeys;kubermaticconfigurations,verbs=list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get
-// +kubebuilder:rbac:groups="operator.kubermatic.io",resources=kubermaticconfigurations,verbs=list
 
-func (a kubermaticAgent) Collect() error {
-	ctx := context.Background()
+func (a kubermaticAgent) Collect(ctx context.Context) error {
 	serverVersion, err := a.ServerVersion()
 	if err != nil {
 		return err
@@ -100,7 +91,6 @@ func (a kubermaticAgent) Collect() error {
 	userList := &kubermaticv1.UserList{}
 	if err := a.List(ctx, userList); err != nil {
 		return fmt.Errorf("failed listing users: %w", err)
-
 	}
 
 	for _, user := range userList.Items {
@@ -130,8 +120,8 @@ func (a kubermaticAgent) Collect() error {
 	if err := a.List(ctx, seedList); err != nil {
 		return fmt.Errorf("failed listing seeds: %w", err)
 	}
-	for _, seed := range seedList.Items {
 
+	for _, seed := range seedList.Items {
 		seedKubeconfigGetter, err := provider.SeedKubeconfigGetterFactory(ctx, a.Client)
 		if err != nil {
 			return err
@@ -161,28 +151,29 @@ func (a kubermaticAgent) Collect() error {
 			return err
 		}
 		record.Seeds = append(record.Seeds, seed)
-
 	}
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
-	return a.dataStore.Store(data)
+
+	return a.dataStore.Store(ctx, data)
 }
 
 func (a kubermaticAgent) getDefaultExposeStrategy(ctx context.Context) (kubermaticv1.ExposeStrategy, error) {
-	kubermaticConfigs := &operatorv1alpha1.KubermaticConfigurationList{}
+	kubermaticConfigs := &kubermaticv1.KubermaticConfigurationList{}
 	if err := a.List(ctx, kubermaticConfigs); err != nil {
-		return "", fmt.Errorf("failed listing kubermaitc configurations: %w", err)
+		return "", fmt.Errorf("failed listing kubermatic configurations: %w", err)
 	}
 	configLen := len(kubermaticConfigs.Items)
 	if configLen == 0 || configLen > 1 {
-		return "", fmt.Errorf("kubermaitc configuration number not as expected: %v", configLen)
+		return "", fmt.Errorf("kubermatic configuration number not as expected: %v", configLen)
 	}
 
 	defaultExposeStrategy := kubermaticConfigs.Items[0].Spec.ExposeStrategy
 	if defaultExposeStrategy == "" {
-		defaultExposeStrategy = common.DefaultExposeStrategy
+		defaultExposeStrategy = defaults.DefaultExposeStrategy
 	}
 
 	return defaultExposeStrategy, nil
@@ -258,7 +249,6 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		ExposeStrategy:          string(kn.Spec.ExposeStrategy),
 		EtcdClusterSize:         etcdSize,
 		KubernetesServerVersion: kn.Spec.Version.String(),
-		KubermaticVersion:       kn.Status.KubermaticVersion,
 		Cloud: Cloud{
 			ProviderName:   providerName,
 			DatacenterUUID: generateUUID(kn.Spec.Cloud.DatacenterName),
@@ -296,6 +286,7 @@ func sshKeyFromKube(kn kubermaticv1.UserSSHKey) (SSHKey, error) {
 		OwnerProjectUUID: ownerProject,
 		ClusterUUIDs:     clusters,
 	}
+
 	return SSHKey, nil
 }
 
@@ -304,12 +295,12 @@ func userKeyFromKube(kn kubermaticv1.User) (User, error) {
 		UUID:    generateUUID(kn.Name),
 		IsAdmin: kn.Spec.IsAdmin,
 	}
+
 	return user, nil
 }
 
 func generateUUID(x string) string {
-	space, _ := uuid.Parse(uuidSpace)
-	UUID := uuid.NewMD5(space, []byte(x))
+	UUID := uuid.NewMD5(uuid.Nil, []byte(x))
 
 	return UUID.String()
 }
@@ -321,24 +312,24 @@ func datacenterCloudRegionName(spec *kubermaticv1.DatacenterSpec, providerName s
 
 	var region string
 
-	switch providerName {
-	case provider.DigitaloceanCloudProvider:
+	switch kubermaticv1.ProviderType(providerName) {
+	case kubermaticv1.DigitaloceanCloudProvider:
 		region = spec.Digitalocean.Region
-	case provider.AWSCloudProvider:
+	case kubermaticv1.AWSCloudProvider:
 		region = spec.AWS.Region
-	case provider.AzureCloudProvider:
+	case kubermaticv1.AzureCloudProvider:
 		region = spec.Azure.Location
-	case provider.OpenstackCloudProvider:
+	case kubermaticv1.OpenstackCloudProvider:
 		region = spec.Openstack.Region
-	case provider.HetznerCloudProvider:
+	case kubermaticv1.HetznerCloudProvider:
 		region = spec.Hetzner.Location
-	case provider.VSphereCloudProvider:
+	case kubermaticv1.VSphereCloudProvider:
 		region = spec.VSphere.Datacenter
-	case provider.GCPCloudProvider:
+	case kubermaticv1.GCPCloudProvider:
 		region = spec.GCP.Region
-	case provider.AlibabaCloudProvider:
+	case kubermaticv1.AlibabaCloudProvider:
 		region = spec.Alibaba.Region
-	case provider.AnexiaCloudProvider:
+	case kubermaticv1.AnexiaCloudProvider:
 		region = spec.Anexia.LocationID
 	}
 

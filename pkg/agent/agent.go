@@ -17,12 +17,15 @@ limitations under the License.
 package agent
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
+
+	"k8s.io/utils/pointer"
 )
 
 type Agent interface {
-	Collect() error
+	Collect(ctx context.Context) error
 }
 
 func HashOf(str string) (string, error) {
@@ -38,7 +41,6 @@ func StrPtr(str string) *string {
 	if str == "" {
 		return nil
 	}
-	p := new(string)
-	*p = str
-	return p
+
+	return pointer.String(str)
 }

@@ -1,4 +1,4 @@
-# Copyright 2021 The Telemetry Authors.
+# Copyright 2022 The Telemetry Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: telemetry-agent
+  namespace: telemetry-system
+
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -22,4 +29,17 @@ roleRef:
   name: kubernetes-agent-role
 subjects:
   - kind: ServiceAccount
-    name: agent-sa
+    name: telemetry-agent
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubermatic-agent-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubermatic-agent-role
+subjects:
+  - kind: ServiceAccount
+    name: telemetry-agent
