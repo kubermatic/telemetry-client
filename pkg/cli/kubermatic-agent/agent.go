@@ -24,8 +24,7 @@ import (
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
 	"github.com/spf13/cobra"
-	kubermaticv1 "k8c.io/kubermatic/v2/pkg/crd/kubermatic/v1"
-	operatorv1alpha1 "k8c.io/kubermatic/v2/pkg/crd/operator/v1alpha1"
+	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
@@ -40,7 +39,6 @@ var scheme = runtime.NewScheme()
 func init() {
 	utilruntime.Must(kubermaticv1.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 }
 
 type flags struct {
