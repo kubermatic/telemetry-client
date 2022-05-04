@@ -26,7 +26,7 @@ BUILD_DEST ?= _build
 GOTOOLFLAGS ?= $(GOBUILDFLAGS) -ldflags '$(LDFLAGS_EXTRA) $(LDFLAGS)' $(GOTOOLFLAGS_EXTRA)
 
 # Docker-related variables
-REPO = quay.io/kubermatic/telemetry
+REPO = quay.io/kubermatic/telemetry-agent
 TAGS ?= $(shell git describe --tags --always)
 DOCKER_BUILD_FLAG += $(foreach tag, $(TAGS), -t $(REPO):$(tag))
 
