@@ -71,7 +71,7 @@ type Node struct {
 
 type Resource struct {
 	// Resource is the name of the resource.
-	Resource string `json:"resource"` // required
+	Resource string `json:"resource"`
 	// Value is the string form of the of the resource's value.
-	Value string `json:"value"` // required
+	Value string `json:"value"`
 }

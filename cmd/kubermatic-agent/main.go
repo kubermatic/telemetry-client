@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	kubermaticagent "github.com/kubermatic/telemetry-client/pkg/cli/kubermatic-agent"
@@ -25,7 +25,7 @@ import (
 
 func main() {
 	if err := kubermaticagent.NewKubermaticAgentCommand().Execute(); err != nil {
-		fmt.Printf("failed to build command: %+v", err)
+		log.Printf("Failed: %v", err)
 		os.Exit(1)
 	}
 }

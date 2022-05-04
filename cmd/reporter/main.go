@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/kubermatic/telemetry-client/pkg/cli/reporter"
@@ -24,6 +25,7 @@ import (
 
 func main() {
 	if err := reporter.NewReporterCommand().Execute(); err != nil {
+		log.Printf("Failed: %v", err)
 		os.Exit(1)
 	}
 }

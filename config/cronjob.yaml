@@ -1,4 +1,4 @@
-# Copyright 2021 The Telemetry Authors.
+# Copyright 2022 The Telemetry Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: job
-  namespace: system
+  namespace: telemetry-system
 spec:
   schedule: "0 * * * *"
   jobTemplate:
@@ -26,10 +26,13 @@ spec:
           labels:
             control-plane: telemetry
         spec:
-          serviceAccountName: agent-sa
+          serviceAccountName: telemetry-agent
+          restartPolicy: OnFailure
           initContainers:
             - name: kubernetes-agent
-              image: quay.io/kubermatic/telemetry-kubernetes-agent:v0.1.0
+              image: quay.io/kubermatic/telemetry:v0.1.0
+              command:
+                - kubernetes-agent
               args:
                 - "--record-dir=$(RECORD_DIR)"
               env:
@@ -46,7 +49,9 @@ spec:
                   cpu: "0.5"
                   memory: 100Mi
             - name: kubermatic-agent
-              image: quay.io/kubermatic/telemetry-kubermatic-agent:v0.1.0
+              image: quay.io/kubermatic/telemetry:v0.1.0
+              command:
+                - kubermatic-agent
               args:
                 - "--record-dir=$(RECORD_DIR)"
               env:
@@ -64,7 +69,9 @@ spec:
                   memory: 100Mi
           containers:
             - name: reporter
-              image: quay.io/kubermatic/telemetry-reporter:v0.1.0
+              image: quay.io/kubermatic/telemetry:v0.1.0
+              command:
+                - reporter
               args:
                 - "http"
                 - "--client-uuid=$(CLIENT_UUID)"
@@ -93,4 +100,3 @@ spec:
           volumes:
             - name: records
               emptyDir: {}
-          restartPolicy: OnFailure
