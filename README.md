@@ -1,6 +1,6 @@
 # Telemetry-Client
 
-Telemetry-Client is an observability tool that can be used to track Kubermatic Kubernetes Platform and Kubernetes cluster usage. It collects anonymous data and helps us to improve KKP performance for large and scalable setups. [This guide](https://docs.kubermatic.com/kubermatic/v2.18/guides/telemetry/) explains how to enable and disable the Telemetry tool in your KKP installation, and what kind of data it collects.
+Telemetry-Client is an observability tool that can be used to track Kubermatic Kubernetes Platform and Kubernetes cluster usage. It collects anonymous data and helps us to improve KKP performance for large and scalable setups. [This guide](https://docs.kubermatic.com/kubermatic/v2.20/guides/telemetry/) explains how to enable and disable the Telemetry tool in your KKP installation, and what kind of data it collects.
 
 ## Troubleshooting
 
