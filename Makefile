@@ -63,4 +63,5 @@ tidy:
 .PHONY: verify
 verify:
 	hack/verify-boilerplate.sh
+	hack/verify-codegen.sh
 	golangci-lint run --verbose ./...

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2021 The Telemetry Authors.
+# Copyright 2022 The Telemetry Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o pipefail
+set -euo pipefail
 
-if [[ -n "$(git status --porcelain)" ]]; then
-  git diff
-  echo "Some files have changed after run make generate, please make sure to run make generate before commit changes";
+cd $(dirname $0)/..
+
+./hack/update-codegen.sh
+
+echo "Diffing..."
+if ! git diff --exit-code pkg config; then
+  echo "The generated code is out of date. Please run hack/update-codegen.sh."
   exit 1
 fi
+
+echo "Generated code is in-sync."
