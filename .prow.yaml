@@ -19,53 +19,8 @@ presubmits:
     clone_uri: ssh://git@github.com/kubermatic/telemetry-client.git
     spec:
       containers:
-        - image: quay.io/kubermatic/telemetry-test
-          imagePullPolicy: Always
+        - image: quay.io/kubermatic/build:go-1.18-node-16-1
           command:
             - make
             - test
-
-  - name: pull-telemetry-lint
-    always_run: true
-    decorate: true
-    clone_uri: ssh://git@github.com/kubermatic/telemetry-client.git
-    spec:
-      containers:
-        - image: quay.io/kubermatic/telemetry-test
-          imagePullPolicy: Always
-          command:
-            - make
-            - lint
-
-postsubmits:
-  - name: post-telemetry-test-image
-    decorate: true
-    clone_uri: ssh://git@github.com/kubermatic/telemetry-client.git
-    branches:
-      - ^main$
-    run_if_changed: "(go.sum|go.mod|start-docker.sh|test.Dockerfile|.pre-commit-config.yaml)"
-    spec:
-      containers:
-        - image: quay.io/kubermatic/telemetry-test
-          imagePullPolicy: Always
-          command:
-            - make
-            - push-image-test
-          env:
-            - name: QUAY_IO_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: kubermatic-quay.io
-                  key: username
-            - name: QUAY_IO_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: kubermatic-quay.io
-                  key: password
-          # docker-in-docker needs privileged mode
-          securityContext:
-            privileged: true
-          resources:
-            requests:
-              cpu: 800m
-              memory: 2Gi
+            - verify

@@ -22,7 +22,6 @@ LDFLAGS += -extldflags '-static'
 LDFLAGS_EXTRA=-w
 BUILD_DEST ?= _build
 GOTOOLFLAGS ?= $(GOBUILDFLAGS) -ldflags '$(LDFLAGS_EXTRA) $(LDFLAGS)' $(GOTOOLFLAGS_EXTRA)
-IMAGE_ORG = quay.io/kubermatic
 
 # -----------------
 # Compile
@@ -48,7 +47,7 @@ generate:
 # ------------
 .PHONY: test
 test:
-	go test -race -v ./pkg/...
+	CGO_ENABLED=1 go test -race -v ./pkg/...
 
 # -------------
 # Util Commands
