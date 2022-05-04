@@ -12,16 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CGO_ENABLED = 0
-export GOFLAGS ?= -mod=readonly -trimpath
 SHELL = /bin/bash
 CMD ?= $(notdir $(wildcard ./cmd/*))
+
+# Go-related variables
+export CGO_ENABLED = 0
+export GOFLAGS ?= -mod=readonly -trimpath
 GOOS ?= $(shell go env GOOS)
 GOBUILDFLAGS ?= -v
 LDFLAGS += -extldflags '-static'
 LDFLAGS_EXTRA=-w
 BUILD_DEST ?= _build
 GOTOOLFLAGS ?= $(GOBUILDFLAGS) -ldflags '$(LDFLAGS_EXTRA) $(LDFLAGS)' $(GOTOOLFLAGS_EXTRA)
+
+# Docker-related variables
+REPO = quay.io/kubermatic/telemetry
+TAGS ?= $(shell git describe --tags --always)
+DOCKER_BUILD_FLAG += $(foreach tag, $(TAGS), -t $(REPO):$(tag))
 
 # -----------------
 # Compile
@@ -41,6 +48,10 @@ _build/%: cmd/%
 .PHONY: generate
 generate:
 	@hack/update-codegen.sh
+
+.PHONY: docker-build
+docker-build: build
+	docker build $(DOCKER_BUILD_FLAG) .
 
 # ------------
 # Test Runners
