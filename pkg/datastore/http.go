@@ -21,14 +21,17 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type httpStore struct {
 	url string
+	log *zap.SugaredLogger
 }
 
-func NewHTTPStore(endpoint string) DataStore {
-	return httpStore{url: endpoint}
+func NewHTTPStore(endpoint string, log *zap.SugaredLogger) DataStore {
+	return httpStore{url: endpoint, log: log}
 }
 
 func (s httpStore) Store(ctx context.Context, data json.RawMessage) error {
@@ -37,6 +40,8 @@ func (s httpStore) Store(ctx context.Context, data json.RawMessage) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	s.log.Infow("Sending data via HTTP…", "target", s.url)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

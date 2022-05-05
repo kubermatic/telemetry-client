@@ -20,18 +20,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 type fileStore struct {
 	directory string
+	log       *zap.SugaredLogger
 }
 
-func NewFileStore(directory string) DataStore {
-	return fileStore{directory: directory}
+func NewFileStore(directory string, log *zap.SugaredLogger) DataStore {
+	return fileStore{directory: directory, log: log}
 }
 
 func (s fileStore) Store(ctx context.Context, data json.RawMessage) error {
@@ -43,10 +46,8 @@ func (s fileStore) Store(ctx context.Context, data json.RawMessage) error {
 		return err
 	}
 
-	// We need to provide a different Seed every time when generating a new file, otherwise, it will use the default Seed,
-	// which will provide a deterministic file name every time, and this will cause data overwriting.
-	rand.Seed(time.Now().UnixNano())
-	filename := filepath.Join(s.directory, fmt.Sprintf("record-%s.json", fmt.Sprint(rand.Uint64())))
+	now := time.Now().UTC().Format("2006-01-02T15-04-05")
+	filename := filepath.Join(s.directory, fmt.Sprintf("record-%s-%s.json", now, rand.String(6)))
 
 	f, err := os.Create(filename)
 	if err != nil {
@@ -57,6 +58,8 @@ func (s fileStore) Store(ctx context.Context, data json.RawMessage) error {
 	if _, err := f.Write(data); err != nil {
 		return err
 	}
+
+	s.log.Infow("Stored data on disk", "filename", filename)
 
 	return nil
 }

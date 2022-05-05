@@ -24,6 +24,7 @@ import (
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
@@ -44,22 +45,28 @@ type flags struct {
 	recordDir string
 }
 
-func NewKubernetesAgentCommand() *cobra.Command {
+func NewKubernetesAgentCommand(log *zap.SugaredLogger) *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "kubernetes-agent",
-		Short: "Kubernetes Telemetry Agent",
+		Args:          cobra.NoArgs,
+		Use:           "kubernetes-agent",
+		Short:         "Kubernetes Telemetry Agent",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd.Context(), flags)
+			return runE(cmd.Context(), log, flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.recordDir, "record-dir", "/records/", "the directory to save all records files from agents")
 	return cmd
 }
 
-func runE(ctx context.Context, flags *flags) error {
-	cfg := ctrl.GetConfigOrDie()
+func runE(ctx context.Context, log *zap.SugaredLogger, flags *flags) error {
+	cfg, err := ctrl.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get kubernetes configuration: %w", err)
+	}
+
 	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create rest mapper: %w", err)
@@ -78,8 +85,10 @@ func runE(ctx context.Context, flags *flags) error {
 		return fmt.Errorf("failed to create discovery client: %w", err)
 	}
 
-	dataStore := datastore.NewFileStore(flags.recordDir)
-	agent := k8sagentv1.NewAgent(c, discoveryClient, dataStore)
+	dataStore := datastore.NewFileStore(flags.recordDir, log)
+	agent := k8sagentv1.NewAgent(c, discoveryClient, dataStore, log)
+
+	log.Info("Collecting data…")
 
 	return agent.Collect(ctx)
 }

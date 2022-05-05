@@ -26,6 +26,7 @@ import (
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
 	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
 	"k8c.io/kubermatic/v2/pkg/provider"
@@ -40,14 +41,17 @@ type serverVersionInfo interface {
 type kubermaticAgent struct {
 	client.Client
 	serverVersionInfo
+
 	dataStore datastore.DataStore
+	log       *zap.SugaredLogger
 }
 
-func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.DataStore) agent.Agent {
+func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.DataStore, log *zap.SugaredLogger) agent.Agent {
 	return kubermaticAgent{
 		Client:            client,
 		serverVersionInfo: info,
 		dataStore:         dataStore,
+		log:               log,
 	}
 }
 
@@ -87,6 +91,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		record.Projects = append(record.Projects, project)
 	}
 
+	a.log.Infow("Collected projects", "projects", len(record.Projects))
+
 	// List users
 	userList := &kubermaticv1.UserList{}
 	if err := a.List(ctx, userList); err != nil {
@@ -101,6 +107,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		record.Users = append(record.Users, user)
 	}
 
+	a.log.Infow("Collected users", "users", len(record.Users))
+
 	// List sshKeys
 	sshKeyList := &kubermaticv1.UserSSHKeyList{}
 	if err := a.List(ctx, sshKeyList); err != nil {
@@ -114,6 +122,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		}
 		record.SSHKeys = append(record.SSHKeys, sshKey)
 	}
+
+	a.log.Infow("Collected SSH keys", "keys", len(record.SSHKeys))
 
 	// List seeds
 	seedList := &kubermaticv1.SeedList{}
@@ -146,12 +156,16 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 			record.Clusters = append(record.Clusters, cluster)
 		}
 
+		a.log.Infow("Collected userclusters", "seed", seed.Name, "clusters", len(record.Clusters))
+
 		seed, err := seedFromKube(seed, defaultExposeStrategy)
 		if err != nil {
 			return err
 		}
 		record.Seeds = append(record.Seeds, seed)
 	}
+
+	a.log.Infow("Collected seeds", "seeds", len(record.Seeds))
 
 	data, err := json.Marshal(record)
 	if err != nil {
