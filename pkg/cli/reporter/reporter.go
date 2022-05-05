@@ -18,9 +18,10 @@ package reporter
 
 import (
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
-func NewReporterCommand() *cobra.Command {
+func NewReporterCommand(log *zap.SugaredLogger) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "reporter",
@@ -29,7 +30,7 @@ func NewReporterCommand() *cobra.Command {
 
 	cmd.AddCommand(
 		newStdoutReporterCommand(),
-		newHTTPReporterCommand(),
+		newHTTPReporterCommand(log),
 	)
 	return cmd
 }

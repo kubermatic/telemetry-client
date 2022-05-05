@@ -26,6 +26,7 @@ import (
 	"github.com/kubermatic/telemetry-client/pkg/agent/kubernetes"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,14 +39,17 @@ type serverVersionInfo interface {
 type kubernetesAgent struct {
 	client.Client
 	serverVersionInfo
+
 	dataStore datastore.DataStore
+	log       *zap.SugaredLogger
 }
 
-func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.DataStore) agent.Agent {
+func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.DataStore, log *zap.SugaredLogger) agent.Agent {
 	return kubernetesAgent{
 		Client:            client,
 		serverVersionInfo: info,
 		dataStore:         dataStore,
+		log:               log,
 	}
 }
 
@@ -70,6 +74,7 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 	if err := a.List(ctx, knodes); err != nil {
 		return err
 	}
+
 	for _, knode := range knodes.Items {
 		node, err := nodeFromKubeNode(knode)
 		if err != nil {
@@ -77,10 +82,14 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 		}
 		record.Nodes = append(record.Nodes, node)
 	}
+
+	a.log.Infow("Collected nodes", "nodes", len(record.Nodes))
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
+
 	return a.dataStore.Store(ctx, data)
 }
 
@@ -104,7 +113,9 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 	for k := range kn.Status.Capacity {
 		keys = append(keys, string(k))
 	}
+
 	sort.Strings(keys)
+
 	for _, k := range keys {
 		v := kn.Status.Capacity[corev1.ResourceName(k)]
 		n.Capacity = append(n.Capacity, Resource{
@@ -112,6 +123,7 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 			Value:    v.String(),
 		})
 	}
+
 	return n, nil
 }
 

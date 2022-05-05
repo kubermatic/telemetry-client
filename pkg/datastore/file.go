@@ -24,14 +24,17 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type fileStore struct {
 	directory string
+	log       *zap.SugaredLogger
 }
 
-func NewFileStore(directory string) DataStore {
-	return fileStore{directory: directory}
+func NewFileStore(directory string, log *zap.SugaredLogger) DataStore {
+	return fileStore{directory: directory, log: log}
 }
 
 func (s fileStore) Store(ctx context.Context, data json.RawMessage) error {
@@ -57,6 +60,8 @@ func (s fileStore) Store(ctx context.Context, data json.RawMessage) error {
 	if _, err := f.Write(data); err != nil {
 		return err
 	}
+
+	s.log.Infow("Stored data on disk", "filename", filename)
 
 	return nil
 }

@@ -23,6 +23,7 @@ import (
 	reporterv1 "github.com/kubermatic/telemetry-client/pkg/reporter/v1"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -42,14 +43,14 @@ type httpFlags struct {
 	clientUUID string
 }
 
-func newHTTPReporterCommand() *cobra.Command {
+func newHTTPReporterCommand(log *zap.SugaredLogger) *cobra.Command {
 	flags := &httpFlags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "http",
 		Short: "Telemetry http-reporter",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			httpStore := datastore.NewHTTPStore(flags.url)
+			httpStore := datastore.NewHTTPStore(flags.url, log)
 			reporter, err := reporterv1.NewFileReporter(httpStore, flags.recordDir, flags.clientUUID)
 			if err != nil {
 				return err

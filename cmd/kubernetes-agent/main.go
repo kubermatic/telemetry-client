@@ -17,15 +17,19 @@ limitations under the License.
 package main
 
 import (
-	"log"
 	"os"
 
 	kubernetesagent "github.com/kubermatic/telemetry-client/pkg/cli/kubernetes-agent"
+	"github.com/kubermatic/telemetry-client/pkg/log"
 )
 
 func main() {
-	if err := kubernetesagent.NewKubernetesAgentCommand().Execute(); err != nil {
-		log.Printf("Failed: %v", err)
+	logger := log.NewDefault().Sugar().With("agent", "kubernetes")
+
+	if err := kubernetesagent.NewKubernetesAgentCommand(logger).Execute(); err != nil {
+		logger.Error(err)
 		os.Exit(1)
 	}
+
+	logger.Info("Operation completed.")
 }

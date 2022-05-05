@@ -17,15 +17,19 @@ limitations under the License.
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/kubermatic/telemetry-client/pkg/cli/reporter"
+	"github.com/kubermatic/telemetry-client/pkg/log"
 )
 
 func main() {
-	if err := reporter.NewReporterCommand().Execute(); err != nil {
-		log.Printf("Failed: %v", err)
+	logger := log.NewDefault().Sugar().With("reporter", "yes")
+
+	if err := reporter.NewReporterCommand(logger).Execute(); err != nil {
+		logger.Error(err)
 		os.Exit(1)
 	}
+
+	logger.Info("Operation completed.")
 }
