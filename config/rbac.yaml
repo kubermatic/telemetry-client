@@ -43,7 +43,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: telemetry-agent
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -61,14 +60,18 @@ rules:
   - kubermatic.k8c.io
   resources:
   - clusters
-  - kubermaticconfigurations
   - projects
   - seeds
   - users
   - usersshkeys
   verbs:
   - list
-
+- apiGroups:
+  - kubermatic.k8c.io
+  resources:
+  - kubermaticconfigurations
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

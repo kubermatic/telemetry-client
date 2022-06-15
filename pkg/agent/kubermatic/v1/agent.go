@@ -27,10 +27,10 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"k8c.io/kubermatic/pkg/resources"
 	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
 	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
 	"k8c.io/kubermatic/v2/pkg/provider"
+	"k8c.io/kubermatic/v2/pkg/resources"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/version"
@@ -58,21 +58,17 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 	}
 }
 
-// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=seeds;clusters;users;projects;usersshkeys;kubermaticconfigurations,verbs=list
+// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=seeds;clusters;users;projects;usersshkeys,verbs=list
+// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=kubermaticconfigurations,verbs=get
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get
 
 func (a kubermaticAgent) Collect(ctx context.Context) error {
-	serverVersion, err := a.ServerVersion()
-	if err != nil {
-		return err
-	}
 	record := Record{
 		KindVersion: agent.KindVersion{
 			Kind:    "kubermatic",
 			Version: "v1",
 		},
-		Time:              time.Now().UTC(),
-		KubernetesVersion: serverVersion.String(),
+		Time: time.Now().UTC(),
 	}
 
 	// Get Kubermatic Configuration
@@ -270,6 +266,7 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		SeedUUID:                generateUUID(seedName),
 		ProjectUUID:             generateUUID(kn.Labels[kubermaticv1.ProjectIDLabelKey]),
 		CNIPlugin:               cniPlugin,
+		ClusterNetwork:          clusterNetworkingConfig,
 		ExposeStrategy:          string(kn.Spec.ExposeStrategy),
 		EtcdClusterSize:         etcdSize,
 		KubernetesServerVersion: kn.Spec.Version.String(),
@@ -279,8 +276,7 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		},
 		OPAIntegrationEnabled:  opaEnabled,
 		UserSSHKeyAgentEnabled: userSSHKeyAgentEnabled,
-		//KonnectivityEnabled:    konnectivityEnabled,
-		MLA: mla,
+		MLA:                    mla,
 	}
 	return cluster, nil
 }

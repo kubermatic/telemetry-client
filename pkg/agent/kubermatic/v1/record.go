@@ -27,8 +27,6 @@ type Record struct {
 	agent.KindVersion
 	// Time is the time when the record is generated.
 	Time time.Time `json:"time"`
-	// Kubernetes version of this Kubermatic master cluster.
-	KubernetesVersion string `json:"kubernetes_version"`
 	// KubermaticEdition is the Kubermatic edition type
 	KubermaticEdition string `json:"kubermatic_edition"`
 	// KubermaticVersion is the Kubermatic Release Version.
