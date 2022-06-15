@@ -27,9 +27,12 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"k8c.io/kubermatic/pkg/resources"
 	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
 	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
 	"k8c.io/kubermatic/v2/pkg/provider"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -72,9 +75,20 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		KubernetesVersion: serverVersion.String(),
 	}
 
-	defaultExposeStrategy, err := a.getDefaultExposeStrategy(ctx)
-	if err != nil {
+	// Get Kubermatic Configuration
+	config := &kubermaticv1.KubermaticConfiguration{}
+	if err := a.Get(ctx, types.NamespacedName{Name: "kubermatic", Namespace: resources.KubermaticNamespace}, config); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
+	}
+	record.KubermaticEdition = config.Status.KubermaticEdition
+	record.KubermaticVersion = config.Status.KubermaticVersion
+
+	defaultExposeStrategy := config.Spec.ExposeStrategy
+	if defaultExposeStrategy == "" {
+		defaultExposeStrategy = defaults.DefaultExposeStrategy
 	}
 
 	// List projects
@@ -175,24 +189,6 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 	return a.dataStore.Store(ctx, data)
 }
 
-func (a kubermaticAgent) getDefaultExposeStrategy(ctx context.Context) (kubermaticv1.ExposeStrategy, error) {
-	kubermaticConfigs := &kubermaticv1.KubermaticConfigurationList{}
-	if err := a.List(ctx, kubermaticConfigs); err != nil {
-		return "", fmt.Errorf("failed listing kubermatic configurations: %w", err)
-	}
-	configLen := len(kubermaticConfigs.Items)
-	if configLen == 0 || configLen > 1 {
-		return "", fmt.Errorf("kubermatic configuration number not as expected: %v", configLen)
-	}
-
-	defaultExposeStrategy := kubermaticConfigs.Items[0].Spec.ExposeStrategy
-	if defaultExposeStrategy == "" {
-		defaultExposeStrategy = defaults.DefaultExposeStrategy
-	}
-
-	return defaultExposeStrategy, nil
-}
-
 func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.ExposeStrategy) (Seed, error) {
 	var kDatacenter []Datacenter
 
@@ -233,16 +229,29 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		return Cluster{}, err
 	}
 
+	var cniPlugin CNIPluginSettings
+	if kn.Spec.CNIPlugin != nil {
+		cniPlugin.Type = kn.Spec.CNIPlugin.Type.String()
+		cniPlugin.Version = kn.Spec.CNIPlugin.Version
+	}
+
+	var clusterNetworkingConfig ClusterNetworkingConfig
+	clusterNetwork := kn.Spec.ClusterNetwork
+	clusterNetworkingConfig.IPFamily = string(clusterNetwork.IPFamily)
+	if clusterNetwork.KonnectivityEnabled != nil {
+		clusterNetworkingConfig.KonnectivityEnabled = *clusterNetwork.KonnectivityEnabled
+	}
+
 	var opaEnabled bool
 	opaIntegration := kn.Spec.OPAIntegration
 	if opaIntegration != nil {
 		opaEnabled = opaIntegration.Enabled
 	}
 
-	var enableUserSSHKeyAgent bool
+	var userSSHKeyAgentEnabled bool
 	enableUserSSHKeyAgentPointer := kn.Spec.EnableUserSSHKeyAgent
-	if kn.Spec.EnableUserSSHKeyAgent != nil {
-		enableUserSSHKeyAgent = *enableUserSSHKeyAgentPointer
+	if enableUserSSHKeyAgentPointer != nil {
+		userSSHKeyAgentEnabled = *enableUserSSHKeyAgentPointer
 	}
 
 	var mla MLASettings
@@ -260,6 +269,7 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		UUID:                    generateUUID(kn.Name),
 		SeedUUID:                generateUUID(seedName),
 		ProjectUUID:             generateUUID(kn.Labels[kubermaticv1.ProjectIDLabelKey]),
+		CNIPlugin:               cniPlugin,
 		ExposeStrategy:          string(kn.Spec.ExposeStrategy),
 		EtcdClusterSize:         etcdSize,
 		KubernetesServerVersion: kn.Spec.Version.String(),
@@ -268,8 +278,9 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 			DatacenterUUID: generateUUID(kn.Spec.Cloud.DatacenterName),
 		},
 		OPAIntegrationEnabled:  opaEnabled,
-		UserSSHKeyAgentEnabled: enableUserSSHKeyAgent,
-		MLA:                    mla,
+		UserSSHKeyAgentEnabled: userSSHKeyAgentEnabled,
+		//KonnectivityEnabled:    konnectivityEnabled,
+		MLA: mla,
 	}
 	return cluster, nil
 }
