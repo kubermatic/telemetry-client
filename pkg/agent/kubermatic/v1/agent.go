@@ -31,8 +31,6 @@ import (
 	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
 	"k8c.io/kubermatic/v2/pkg/provider"
 	"k8c.io/kubermatic/v2/pkg/resources"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -58,8 +56,7 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 	}
 }
 
-// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=seeds;clusters;users;projects;usersshkeys,verbs=list
-// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=kubermaticconfigurations,verbs=get
+// +kubebuilder:rbac:groups="kubermatic.k8c.io",resources=seeds;clusters;users;projects;usersshkeys;kubermaticconfigurations,verbs=list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get
 
 func (a kubermaticAgent) Collect(ctx context.Context) error {
@@ -72,13 +69,15 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 	}
 
 	// Get Kubermatic Configuration
-	config := &kubermaticv1.KubermaticConfiguration{}
-	if err := a.Get(ctx, types.NamespacedName{Name: "kubermatic", Namespace: resources.KubermaticNamespace}, config); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
+	configGetter, err := provider.DynamicKubermaticConfigurationGetterFactory(a.Client, resources.KubermaticNamespace)
+	if err != nil {
 		return err
 	}
+	config, err := configGetter(ctx)
+	if err != nil {
+		return err
+	}
+	// Get Kubermatic Configuration fields
 	record.KubermaticEdition = config.Status.KubermaticEdition
 	record.KubermaticVersion = config.Status.KubermaticVersion
 
