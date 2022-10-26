@@ -20,28 +20,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-)
 
-// Location contains all the relevant data for an IP.
-type Location struct {
-	City         string  `json:"city"`
-	Country      string  `json:"country"`
-	CountryCode  string  `json:"countryCode"`
-	Latitude     float32 `json:"lat"`
-	Longitude    float32 `json:"lon"`
-	Organization string  `json:"org"`
-	IP           string  `json:"ip"`
-	Region       string  `json:"region"`
-	RegionName   string  `json:"regionName"`
-	Timezone     string  `json:"timezone"`
-	Zip          string  `json:"zip"`
-}
+	"github.com/kubermatic/telemetry-client/pkg/report"
+)
 
 type Report struct {
 	Version    string            `json:"version"`
 	Time       time.Time         `json:"time"`
 	ClientUUID string            `json:"client_uuid"`
-	Location   Location          `json:"location,omitempty"`
+	Location   report.Location   `json:"location,omitempty"`
 	Records    []json.RawMessage `json:"records,omitempty"`
 }
 
@@ -53,6 +40,6 @@ func (r *Report) ListRecords() []json.RawMessage {
 	return r.Records
 }
 
-func (r *Report) SetLocation(location Location) {
+func (r *Report) SetLocation(location report.Location) {
 	r.Location = location
 }
