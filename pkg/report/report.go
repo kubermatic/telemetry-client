@@ -20,9 +20,24 @@ import (
 	"encoding/json"
 )
 
+// Location contains all the relevant data for an IP.
+type Location struct {
+	City         string  `json:"city"`
+	Country      string  `json:"country"`
+	CountryCode  string  `json:"countryCode"`
+	Latitude     float32 `json:"lat"`
+	Longitude    float32 `json:"lon"`
+	Organization string  `json:"org"`
+	IP           string  `json:"ip"`
+	Region       string  `json:"region"`
+	RegionName   string  `json:"regionName"`
+	Timezone     string  `json:"timezone"`
+	Zip          string  `json:"zip"`
+}
+
 type Report interface {
 	ListRecords() []json.RawMessage
-	SetLocation(long, lat float64)
+	SetLocation(location Location)
 }
 
 type Version struct {
