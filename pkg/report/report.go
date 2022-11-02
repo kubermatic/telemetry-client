@@ -24,13 +24,13 @@ import (
 type Location struct {
 	City         string  `json:"city"`
 	Country      string  `json:"country"`
-	CountryCode  string  `json:"countryCode"`
-	Latitude     float32 `json:"lat"`
-	Longitude    float32 `json:"lon"`
-	Organization string  `json:"org"`
+	CountryCode  string  `json:"country_code"`
+	Latitude     float32 `json:"latitude"`
+	Longitude    float32 `json:"longitude"`
+	Organization string  `json:"organization"`
 	IP           string  `json:"ip"`
 	Region       string  `json:"region"`
-	RegionName   string  `json:"regionName"`
+	RegionName   string  `json:"region_name"`
 	Timezone     string  `json:"timezone"`
 	Zip          string  `json:"zip"`
 }
