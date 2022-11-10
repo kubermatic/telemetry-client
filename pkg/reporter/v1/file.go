@@ -129,6 +129,8 @@ func getClient() (client.Client, error) {
 
 func getNodeIP(ctx context.Context, k8sClient client.Client) (string, error) {
 	nodeList := &corev1.NodeList{}
+	// We need to fetch external ip of only one node to get location data
+	// as we are assuming all nodes of a single cluster will be co-located.
 	if err := k8sClient.List(ctx,
 		nodeList,
 		&client.ListOptions{Limit: 1}); err != nil {
