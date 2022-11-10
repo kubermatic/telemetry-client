@@ -25,11 +25,13 @@ import (
 )
 
 type Report struct {
-	Version    string            `json:"version"`
-	Time       time.Time         `json:"time"`
-	ClientUUID string            `json:"client_uuid"`
-	Location   report.Location   `json:"location,omitempty"`
-	Records    []json.RawMessage `json:"records,omitempty"`
+	Version        string            `json:"version"`
+	Time           time.Time         `json:"time"`
+	ClientUUID     string            `json:"client_uuid"`
+	MasterIP       string            `json:"masterIP"`
+	ClientLocation report.Location   `json:"client_location,omitempty"`
+	MasterLocation report.Location   `json:"master_location,omitempty"`
+	Records        []json.RawMessage `json:"records,omitempty"`
 }
 
 func (r *Report) String() string {
@@ -40,6 +42,10 @@ func (r *Report) ListRecords() []json.RawMessage {
 	return r.Records
 }
 
-func (r *Report) SetLocation(location report.Location) {
-	r.Location = location
+func (r *Report) SetClientLocation(location report.Location) {
+	r.ClientLocation = location
+}
+
+func (r *Report) SetMasterLocation(location report.Location) {
+	r.MasterLocation = location
 }
