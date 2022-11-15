@@ -28,8 +28,6 @@ type Report struct {
 	Version    string    `json:"version"`
 	Time       time.Time `json:"time"`
 	ClientUUID string    `json:"client_uuid"`
-	// MasterIP is the kkp master cluster node ip.
-	MasterIP string `json:"masterIP"`
 	// ClientLocation is the location data fetched from client http request ip using ip-api in telemetry collector.
 	ClientLocation report.Location `json:"client_location,omitempty"`
 	// MasterLocation is the location data fetched from kkp master cluster node ip using ip-api in telemetry collector.
