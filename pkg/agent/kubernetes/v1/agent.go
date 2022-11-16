@@ -75,15 +75,12 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 		return err
 	}
 
-	for idx, knode := range knodes.Items {
+	for _, knode := range knodes.Items {
 		node, err := nodeFromKubeNode(knode)
 		if err != nil {
 			return err
 		}
 		record.Nodes = append(record.Nodes, node)
-		if idx == 0 {
-			record.MasterNodeIP = getNodeExternalIP(knode)
-		}
 	}
 
 	a.log.Infow("Collected nodes", "nodes", len(record.Nodes))
@@ -101,6 +98,7 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 	if err != nil {
 		return Node{}, err
 	}
+
 	n := Node{
 		ID:                      id,
 		OperatingSystem:         agent.StrPtr(kn.Status.NodeInfo.OperatingSystem),
@@ -110,6 +108,7 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 		ContainerRuntimeVersion: agent.StrPtr(kn.Status.NodeInfo.ContainerRuntimeVersion),
 		KubeletVersion:          agent.StrPtr(kn.Status.NodeInfo.KubeletVersion),
 		CloudProvider:           agent.StrPtr(kubernetes.ProviderName(kn.Spec.ProviderID)),
+		ExternalIP:              getNodeExternalIP(kn),
 	}
 
 	// We want to iterate the resources in a deterministic order.
