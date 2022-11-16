@@ -37,7 +37,8 @@ type Location struct {
 
 type Report interface {
 	ListRecords() []json.RawMessage
-	SetLocation(location Location)
+	SetClientLocation(location Location)
+	SetMasterLocation(location Location)
 }
 
 type Version struct {

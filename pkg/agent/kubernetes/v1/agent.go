@@ -98,6 +98,7 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 	if err != nil {
 		return Node{}, err
 	}
+
 	n := Node{
 		ID:                      id,
 		OperatingSystem:         agent.StrPtr(kn.Status.NodeInfo.OperatingSystem),
@@ -107,7 +108,9 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 		ContainerRuntimeVersion: agent.StrPtr(kn.Status.NodeInfo.ContainerRuntimeVersion),
 		KubeletVersion:          agent.StrPtr(kn.Status.NodeInfo.KubeletVersion),
 		CloudProvider:           agent.StrPtr(kubernetes.ProviderName(kn.Spec.ProviderID)),
+		ExternalIP:              getNodeExternalIP(kn),
 	}
+
 	// We want to iterate the resources in a deterministic order.
 	var keys []string
 	for k := range kn.Status.Capacity {
@@ -133,4 +136,14 @@ func getID(kn corev1.Node) (string, error) {
 	// just hash them all together. It should be stable, and this reduces risk
 	// of PII leakage.
 	return agent.HashOf(kn.Name + kn.Status.NodeInfo.MachineID + kn.Status.NodeInfo.SystemUUID)
+}
+
+func getNodeExternalIP(node corev1.Node) string {
+	for _, nodeAddress := range node.Status.Addresses {
+		if nodeAddress.Type == corev1.NodeExternalIP {
+			return nodeAddress.Address
+		}
+	}
+
+	return ""
 }

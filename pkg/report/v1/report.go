@@ -25,11 +25,14 @@ import (
 )
 
 type Report struct {
-	Version    string            `json:"version"`
-	Time       time.Time         `json:"time"`
-	ClientUUID string            `json:"client_uuid"`
-	Location   report.Location   `json:"location,omitempty"`
-	Records    []json.RawMessage `json:"records,omitempty"`
+	Version    string    `json:"version"`
+	Time       time.Time `json:"time"`
+	ClientUUID string    `json:"client_uuid"`
+	// ClientLocation is the location data fetched from client http request ip using ip-api in telemetry collector.
+	ClientLocation report.Location `json:"client_location,omitempty"`
+	// MasterLocation is the location data fetched from kkp master cluster node ip using ip-api in telemetry collector.
+	MasterLocation report.Location   `json:"master_location,omitempty"`
+	Records        []json.RawMessage `json:"records,omitempty"`
 }
 
 func (r *Report) String() string {
@@ -40,6 +43,10 @@ func (r *Report) ListRecords() []json.RawMessage {
 	return r.Records
 }
 
-func (r *Report) SetLocation(location report.Location) {
-	r.Location = location
+func (r *Report) SetClientLocation(location report.Location) {
+	r.ClientLocation = location
+}
+
+func (r *Report) SetMasterLocation(location report.Location) {
+	r.MasterLocation = location
 }
