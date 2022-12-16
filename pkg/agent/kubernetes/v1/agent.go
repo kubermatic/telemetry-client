@@ -64,7 +64,7 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 	record := Record{
 		KindVersion: agent.KindVersion{
 			Kind:    "kubernetes",
-			Version: "v1",
+			Version: "v2",
 		},
 		Time:              time.Now().UTC(),
 		KubernetesVersion: serverVersion.String(),

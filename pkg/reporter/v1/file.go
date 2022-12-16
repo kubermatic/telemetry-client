@@ -63,7 +63,7 @@ func (d fileReporter) Report(ctx context.Context) error {
 	}
 
 	report := &v1.Report{
-		Version:    "v1",
+		Version:    "v2",
 		Time:       time.Now().UTC(),
 		ClientUUID: d.clientUUID,
 	}
