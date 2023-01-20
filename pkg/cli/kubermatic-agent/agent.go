@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	k8cv1 "github.com/kubermatic/telemetry-client/pkg/agent/kubermatic/v1"
+	k8cv2 "github.com/kubermatic/telemetry-client/pkg/agent/kubermatic/v2"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 
 	"github.com/spf13/cobra"
@@ -88,7 +88,7 @@ func runE(ctx context.Context, log *zap.SugaredLogger, flags *flags) error {
 	}
 
 	dataStore := datastore.NewFileStore(flags.recordDir, log)
-	agent := k8cv1.NewAgent(c, discoveryClient, dataStore, log)
+	agent := k8cv2.NewAgent(c, discoveryClient, dataStore, log)
 
 	log.Info("Collecting data…")
 

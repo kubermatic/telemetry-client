@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
-	reporterv1 "github.com/kubermatic/telemetry-client/pkg/reporter/v1"
+	reporterv2 "github.com/kubermatic/telemetry-client/pkg/reporter/v2"
 
 	"github.com/spf13/cobra"
 )
@@ -40,7 +40,7 @@ func newStdoutReporterCommand() *cobra.Command {
 		Short: "Telemetry stdout-reporter",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			stdoutStore := datastore.NewStdout()
-			reporter, err := reporterv1.NewFileReporter(stdoutStore, flags.recordDir, flags.clientUUID)
+			reporter, err := reporterv2.NewFileReporter(stdoutStore, flags.recordDir, flags.clientUUID)
 			if err != nil {
 				return err
 			}

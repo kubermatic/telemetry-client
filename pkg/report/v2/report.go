@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"encoding/json"
@@ -29,7 +29,9 @@ type Report struct {
 	Time       time.Time `json:"time"`
 	ClientUUID string    `json:"client_uuid"`
 	// ClientLocation is the location data fetched from client http request ip using ip-api in telemetry collector.
-	ClientLocation report.Location   `json:"client_location,omitempty"`
+	ClientLocation report.Location `json:"client_location,omitempty"`
+	// MasterLocation is the location data fetched from kkp master cluster node ip using ip-api in telemetry collector.
+	MasterLocation report.Location   `json:"master_location,omitempty"`
 	Records        []json.RawMessage `json:"records,omitempty"`
 }
 
@@ -46,5 +48,5 @@ func (r *Report) SetClientLocation(location report.Location) {
 }
 
 func (r *Report) SetMasterLocation(location report.Location) {
-	// does nothing
+	r.MasterLocation = location
 }
