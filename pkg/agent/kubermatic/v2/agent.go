@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Telemetry Authors.
+Copyright 2023 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
@@ -22,23 +22,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-	"go.uber.org/zap"
-	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
-
 	"github.com/kubermatic/telemetry-client/pkg/agent"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
-	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
 
+	"github.com/google/uuid"
+	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
+	"go.uber.org/zap"
+
+	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
 	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
 	"k8c.io/kubermatic/v2/pkg/provider"
-
+	"k8c.io/kubermatic/v2/pkg/resources"
 	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	uuidSpace = "kubermatic"
 )
 
 type serverVersionInfo interface {
@@ -48,6 +44,7 @@ type serverVersionInfo interface {
 type kubermaticAgent struct {
 	client.Client
 	serverVersionInfo
+
 	dataStore datastore.DataStore
 	log       *zap.SugaredLogger
 }
@@ -65,22 +62,31 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get
 
 func (a kubermaticAgent) Collect(ctx context.Context) error {
-	serverVersion, err := a.ServerVersion()
-	if err != nil {
-		return err
-	}
 	record := Record{
 		KindVersion: agent.KindVersion{
 			Kind:    "kubermatic",
-			Version: telemetryversion.V1Version,
+			Version: telemetryversion.V2Version,
 		},
-		Time:              time.Now().UTC(),
-		KubernetesVersion: serverVersion.String(),
+		Time: time.Now().UTC(),
 	}
 
-	defaultExposeStrategy, err := a.getDefaultExposeStrategy(ctx)
+	// Get Kubermatic Configuration
+	configGetter, err := provider.DynamicKubermaticConfigurationGetterFactory(a.Client, resources.KubermaticNamespace)
 	if err != nil {
 		return err
+	}
+	config, err := configGetter(ctx)
+	if err != nil {
+		return err
+	}
+	// Get Kubermatic Configuration fields
+	record.Domain = config.Spec.Ingress.Domain
+	record.KubermaticEdition = config.Status.KubermaticEdition
+	record.KubermaticVersion = config.Status.KubermaticVersion
+
+	defaultExposeStrategy := config.Spec.ExposeStrategy
+	if defaultExposeStrategy == "" {
+		defaultExposeStrategy = defaults.DefaultExposeStrategy
 	}
 
 	// List projects
@@ -97,11 +103,12 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		record.Projects = append(record.Projects, project)
 	}
 
+	a.log.Infow("Collected projects", "projects", len(record.Projects))
+
 	// List users
 	userList := &kubermaticv1.UserList{}
 	if err := a.List(ctx, userList); err != nil {
 		return fmt.Errorf("failed listing users: %w", err)
-
 	}
 
 	for _, user := range userList.Items {
@@ -111,6 +118,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		}
 		record.Users = append(record.Users, user)
 	}
+
+	a.log.Infow("Collected users", "users", len(record.Users))
 
 	// List sshKeys
 	sshKeyList := &kubermaticv1.UserSSHKeyList{}
@@ -126,13 +135,15 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		record.SSHKeys = append(record.SSHKeys, sshKey)
 	}
 
+	a.log.Infow("Collected SSH keys", "keys", len(record.SSHKeys))
+
 	// List seeds
 	seedList := &kubermaticv1.SeedList{}
 	if err := a.List(ctx, seedList); err != nil {
 		return fmt.Errorf("failed listing seeds: %w", err)
 	}
-	for _, seed := range seedList.Items {
 
+	for _, seed := range seedList.Items {
 		seedKubeconfigGetter, err := provider.SeedKubeconfigGetterFactory(ctx, a.Client)
 		if err != nil {
 			return err
@@ -157,36 +168,23 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 			record.Clusters = append(record.Clusters, cluster)
 		}
 
+		a.log.Infow("Collected userclusters", "seed", seed.Name, "clusters", len(record.Clusters))
+
 		seed, err := seedFromKube(seed, defaultExposeStrategy)
 		if err != nil {
 			return err
 		}
 		record.Seeds = append(record.Seeds, seed)
-
 	}
+
+	a.log.Infow("Collected seeds", "seeds", len(record.Seeds))
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
+
 	return a.dataStore.Store(ctx, data)
-}
-
-func (a kubermaticAgent) getDefaultExposeStrategy(ctx context.Context) (kubermaticv1.ExposeStrategy, error) {
-	kubermaticConfigs := &kubermaticv1.KubermaticConfigurationList{}
-	if err := a.List(ctx, kubermaticConfigs); err != nil {
-		return "", fmt.Errorf("failed listing kubermaitc configurations: %w", err)
-	}
-	configLen := len(kubermaticConfigs.Items)
-	if configLen == 0 || configLen > 1 {
-		return "", fmt.Errorf("kubermaitc configuration number not as expected: %v", configLen)
-	}
-
-	defaultExposeStrategy := kubermaticConfigs.Items[0].Spec.ExposeStrategy
-	if defaultExposeStrategy == "" {
-		defaultExposeStrategy = defaults.DefaultExposeStrategy
-	}
-
-	return defaultExposeStrategy, nil
 }
 
 func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.ExposeStrategy) (Seed, error) {
@@ -229,16 +227,29 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		return Cluster{}, err
 	}
 
+	var cniPlugin CNIPluginSettings
+	if kn.Spec.CNIPlugin != nil {
+		cniPlugin.Type = kn.Spec.CNIPlugin.Type.String()
+		cniPlugin.Version = kn.Spec.CNIPlugin.Version
+	}
+
+	var clusterNetworkingConfig ClusterNetworkingConfig
+	clusterNetwork := kn.Spec.ClusterNetwork
+	clusterNetworkingConfig.IPFamily = string(clusterNetwork.IPFamily)
+	if clusterNetwork.KonnectivityEnabled != nil {
+		clusterNetworkingConfig.KonnectivityEnabled = *clusterNetwork.KonnectivityEnabled
+	}
+
 	var opaEnabled bool
 	opaIntegration := kn.Spec.OPAIntegration
 	if opaIntegration != nil {
 		opaEnabled = opaIntegration.Enabled
 	}
 
-	var enableUserSSHKeyAgent bool
+	var userSSHKeyAgentEnabled bool
 	enableUserSSHKeyAgentPointer := kn.Spec.EnableUserSSHKeyAgent
-	if kn.Spec.EnableUserSSHKeyAgent != nil {
-		enableUserSSHKeyAgent = *enableUserSSHKeyAgentPointer
+	if enableUserSSHKeyAgentPointer != nil {
+		userSSHKeyAgentEnabled = *enableUserSSHKeyAgentPointer
 	}
 
 	var mla MLASettings
@@ -256,6 +267,8 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		UUID:                    generateUUID(kn.Name),
 		SeedUUID:                generateUUID(seedName),
 		ProjectUUID:             generateUUID(kn.Labels[kubermaticv1.ProjectIDLabelKey]),
+		CNIPlugin:               cniPlugin,
+		ClusterNetwork:          clusterNetworkingConfig,
 		ExposeStrategy:          string(kn.Spec.ExposeStrategy),
 		EtcdClusterSize:         etcdSize,
 		KubernetesServerVersion: kn.Spec.Version.String(),
@@ -264,7 +277,7 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 			DatacenterUUID: generateUUID(kn.Spec.Cloud.DatacenterName),
 		},
 		OPAIntegrationEnabled:  opaEnabled,
-		UserSSHKeyAgentEnabled: enableUserSSHKeyAgent,
+		UserSSHKeyAgentEnabled: userSSHKeyAgentEnabled,
 		MLA:                    mla,
 	}
 	return cluster, nil
@@ -296,6 +309,7 @@ func sshKeyFromKube(kn kubermaticv1.UserSSHKey) (SSHKey, error) {
 		OwnerProjectUUID: ownerProject,
 		ClusterUUIDs:     clusters,
 	}
+
 	return SSHKey, nil
 }
 
@@ -304,12 +318,12 @@ func userKeyFromKube(kn kubermaticv1.User) (User, error) {
 		UUID:    generateUUID(kn.Name),
 		IsAdmin: kn.Spec.IsAdmin,
 	}
+
 	return user, nil
 }
 
 func generateUUID(x string) string {
-	space, _ := uuid.Parse(uuidSpace)
-	UUID := uuid.NewMD5(space, []byte(x))
+	UUID := uuid.NewMD5(uuid.Nil, []byte(x))
 
 	return UUID.String()
 }

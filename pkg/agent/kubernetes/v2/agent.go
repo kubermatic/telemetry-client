@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Telemetry Authors.
+Copyright 2023 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
 	"encoding/json"
+	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
 	"sort"
 	"time"
-
-	"go.uber.org/zap"
-
-	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/version"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/telemetry-client/pkg/agent"
 	"github.com/kubermatic/telemetry-client/pkg/agent/kubernetes"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
+
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/version"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type serverVersionInfo interface {
@@ -41,7 +40,9 @@ type serverVersionInfo interface {
 type kubernetesAgent struct {
 	client.Client
 	serverVersionInfo
+
 	dataStore datastore.DataStore
+	log       *zap.SugaredLogger
 }
 
 func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.DataStore, log *zap.SugaredLogger) agent.Agent {
@@ -49,6 +50,7 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 		Client:            client,
 		serverVersionInfo: info,
 		dataStore:         dataStore,
+		log:               log,
 	}
 }
 
@@ -63,16 +65,17 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 	record := Record{
 		KindVersion: agent.KindVersion{
 			Kind:    "kubernetes",
-			Version: telemetryversion.V1Version,
+			Version: telemetryversion.V2Version,
 		},
 		Time:              time.Now().UTC(),
 		KubernetesVersion: serverVersion.String(),
 	}
 
 	knodes := &corev1.NodeList{}
-	if err := a.List(context.Background(), knodes); err != nil {
+	if err := a.List(ctx, knodes); err != nil {
 		return err
 	}
+
 	for _, knode := range knodes.Items {
 		node, err := nodeFromKubeNode(knode)
 		if err != nil {
@@ -80,10 +83,14 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 		}
 		record.Nodes = append(record.Nodes, node)
 	}
+
+	a.log.Infow("Collected nodes", "nodes", len(record.Nodes))
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
+
 	return a.dataStore.Store(ctx, data)
 }
 
@@ -92,6 +99,7 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 	if err != nil {
 		return Node{}, err
 	}
+
 	n := Node{
 		ID:                      id,
 		OperatingSystem:         agent.StrPtr(kn.Status.NodeInfo.OperatingSystem),
@@ -101,13 +109,17 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 		ContainerRuntimeVersion: agent.StrPtr(kn.Status.NodeInfo.ContainerRuntimeVersion),
 		KubeletVersion:          agent.StrPtr(kn.Status.NodeInfo.KubeletVersion),
 		CloudProvider:           agent.StrPtr(kubernetes.ProviderName(kn.Spec.ProviderID)),
+		ExternalIP:              getNodeExternalIP(kn),
 	}
+
 	// We want to iterate the resources in a deterministic order.
 	var keys []string
 	for k := range kn.Status.Capacity {
 		keys = append(keys, string(k))
 	}
+
 	sort.Strings(keys)
+
 	for _, k := range keys {
 		v := kn.Status.Capacity[corev1.ResourceName(k)]
 		n.Capacity = append(n.Capacity, Resource{
@@ -115,13 +127,24 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 			Value:    v.String(),
 		})
 	}
+
 	return n, nil
 }
 
 func getID(kn corev1.Node) (string, error) {
 	// We don't want to report the node's Name - that is Personally Identifiable Information.
-	// The MachineID is apparently not always populated and SystemUUID is ill-defined.  Let's
-	// just hash them all together.  It should be stable, and this reduces risk
+	// The MachineID is apparently not always populated and SystemUUID is ill-defined. Let's
+	// just hash them all together. It should be stable, and this reduces risk
 	// of PII leakage.
 	return agent.HashOf(kn.Name + kn.Status.NodeInfo.MachineID + kn.Status.NodeInfo.SystemUUID)
+}
+
+func getNodeExternalIP(node corev1.Node) string {
+	for _, nodeAddress := range node.Status.Addresses {
+		if nodeAddress.Type == corev1.NodeExternalIP {
+			return nodeAddress.Address
+		}
+	}
+
+	return ""
 }

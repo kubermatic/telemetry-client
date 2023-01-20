@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Telemetry Authors.
+Copyright 2023 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
 	"encoding/json"
-	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
+	v2 "github.com/kubermatic/telemetry-client/pkg/report/v2"
+	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
+
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
-	v1 "github.com/kubermatic/telemetry-client/pkg/report/v1"
 	"github.com/kubermatic/telemetry-client/pkg/reporter"
 )
 
@@ -45,34 +45,44 @@ func NewFileReporter(dataStore datastore.DataStore, path, clientUUID string) (re
 }
 
 func (d fileReporter) Report(ctx context.Context) error {
-	report := &v1.Report{
-		Version:    telemetryversion.V1Version,
-		Time:       time.Now().UTC(),
-		ClientUUID: d.clientUUID,
-	}
 	info, err := os.Stat(d.path)
 	if err != nil {
 		return err
 	}
-	var files []os.FileInfo
-	if info.IsDir() {
-		if files, err = ioutil.ReadDir(d.path); err != nil {
-			return err
-		}
-	} else {
-		files = []os.FileInfo{info}
-	}
 
-	for _, file := range files {
-		b, err := ioutil.ReadFile(filepath.Join(d.path, file.Name()))
+	files := []string{}
+	if info.IsDir() {
+		entries, err := os.ReadDir(d.path)
 		if err != nil {
 			return err
 		}
+
+		for _, e := range entries {
+			files = append(files, e.Name())
+		}
+	} else {
+		files = append(files, info.Name())
+	}
+
+	report := &v2.Report{
+		Version:    telemetryversion.V2Version,
+		Time:       time.Now().UTC(),
+		ClientUUID: d.clientUUID,
+	}
+
+	for _, file := range files {
+		b, err := os.ReadFile(filepath.Join(d.path, file))
+		if err != nil {
+			return err
+		}
+
 		report.Records = append(report.Records, b)
 	}
+
 	data, err := json.Marshal(report)
 	if err != nil {
 		return err
 	}
+
 	return d.dataStore.Store(ctx, data)
 }

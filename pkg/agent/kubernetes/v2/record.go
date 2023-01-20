@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ https://github.com/kubernetes-retired/spartakus/blob/master/pkg/volunteer/kubern
 and some customized fields are added to fit Telemetry own use cases.
 */
 
-package v1
+package v2
 
 import (
 	"fmt"
@@ -64,6 +64,8 @@ type Node struct {
 	// CloudProvider is the <ProviderName> portion of the ProviderID reported
 	// by kubernetes in the node spec.
 	CloudProvider *string `json:"cloud_provider,omitempty"`
+	// ExternalIP is the node's external IP.
+	ExternalIP string `json:"external_ip"`
 	// Capacity is a list of resources and their associated values as reported
 	// by kubernetes in the node status.
 	Capacity []Resource `json:"capacity,omitempty"`
@@ -71,7 +73,7 @@ type Node struct {
 
 type Resource struct {
 	// Resource is the name of the resource.
-	Resource string `json:"resource"` // required
+	Resource string `json:"resource"`
 	// Value is the string form of the of the resource's value.
-	Value string `json:"value"` // required
+	Value string `json:"value"`
 }
