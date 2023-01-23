@@ -99,7 +99,6 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 	userList := &kubermaticv1.UserList{}
 	if err := a.List(ctx, userList); err != nil {
 		return fmt.Errorf("failed listing users: %w", err)
-
 	}
 
 	for _, user := range userList.Items {
@@ -130,7 +129,6 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		return fmt.Errorf("failed listing seeds: %w", err)
 	}
 	for _, seed := range seedList.Items {
-
 		seedKubeconfigGetter, err := provider.SeedKubeconfigGetterFactory(ctx, a.Client)
 		if err != nil {
 			return err
@@ -160,7 +158,6 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 			return err
 		}
 		record.Seeds = append(record.Seeds, seed)
-
 	}
 	data, err := json.Marshal(record)
 	if err != nil {
