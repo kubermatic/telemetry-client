@@ -41,6 +41,7 @@ type kubernetesAgent struct {
 	client.Client
 	serverVersionInfo
 	dataStore datastore.DataStore
+	log       *zap.SugaredLogger
 }
 
 func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.DataStore, log *zap.SugaredLogger) agent.Agent {
@@ -48,6 +49,7 @@ func NewAgent(client client.Client, info serverVersionInfo, dataStore datastore.
 		Client:            client,
 		serverVersionInfo: info,
 		dataStore:         dataStore,
+		log:               log,
 	}
 }
 
@@ -69,7 +71,7 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 	}
 
 	knodes := &corev1.NodeList{}
-	if err := a.List(context.Background(), knodes); err != nil {
+	if err := a.List(ctx, knodes); err != nil {
 		return err
 	}
 	for _, knode := range knodes.Items {
@@ -79,6 +81,9 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 		}
 		record.Nodes = append(record.Nodes, node)
 	}
+
+	a.log.Infow("Collected nodes", "nodes", len(record.Nodes))
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
@@ -119,8 +124,8 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 
 func getID(kn corev1.Node) (string, error) {
 	// We don't want to report the node's Name - that is Personally Identifiable Information.
-	// The MachineID is apparently not always populated and SystemUUID is ill-defined.  Let's
-	// just hash them all together.  It should be stable, and this reduces risk
+	// The MachineID is apparently not always populated and SystemUUID is ill-defined. Let's
+	// just hash them all together. It should be stable, and this reduces risk
 	// of PII leakage.
 	return agent.HashOf(kn.Name + kn.Status.NodeInfo.MachineID + kn.Status.NodeInfo.SystemUUID)
 }

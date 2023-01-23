@@ -40,7 +40,6 @@ type serverVersionInfo interface {
 type kubernetesAgent struct {
 	client.Client
 	serverVersionInfo
-
 	dataStore datastore.DataStore
 	log       *zap.SugaredLogger
 }

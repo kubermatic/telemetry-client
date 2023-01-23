@@ -31,7 +31,7 @@ type Record struct {
 	KubernetesVersion string `json:"kubernetes_version"`
 	// Seeds is a list of seed-specific information.
 	Seeds []Seed `json:"seeds,omitempty"`
-	// Clusters is a list of seed-specific information.
+	// Clusters is a list of cluster-specific information.
 	Clusters []Cluster `json:"clusters,omitempty"`
 	// Users is a list of users
 	Users []User `json:"users,omitempty"`

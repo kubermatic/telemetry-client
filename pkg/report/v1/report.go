@@ -46,5 +46,5 @@ func (r *Report) SetClientLocation(location report.Location) {
 }
 
 func (r *Report) SetMasterLocation(location report.Location) {
-	// does nothing
+	// this method does nothing, added this method to make interface compatible.
 }

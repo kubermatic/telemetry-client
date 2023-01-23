@@ -35,10 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	uuidSpace = "kubermatic"
-)
-
 type serverVersionInfo interface {
 	ServerVersion() (*version.Info, error)
 }
@@ -95,6 +91,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		record.Projects = append(record.Projects, project)
 	}
 
+	a.log.Infow("Collected projects", "projects", len(record.Projects))
+
 	// List users
 	userList := &kubermaticv1.UserList{}
 	if err := a.List(ctx, userList); err != nil {
@@ -109,6 +107,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		record.Users = append(record.Users, user)
 	}
 
+	a.log.Infow("Collected users", "users", len(record.Users))
+
 	// List sshKeys
 	sshKeyList := &kubermaticv1.UserSSHKeyList{}
 	if err := a.List(ctx, sshKeyList); err != nil {
@@ -122,6 +122,8 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		}
 		record.SSHKeys = append(record.SSHKeys, sshKey)
 	}
+
+	a.log.Infow("Collected SSH keys", "keys", len(record.SSHKeys))
 
 	// List seeds
 	seedList := &kubermaticv1.SeedList{}
@@ -153,12 +155,17 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 			record.Clusters = append(record.Clusters, cluster)
 		}
 
+		a.log.Infow("Collected userclusters", "seed", seed.Name, "clusters", len(record.Clusters))
+
 		seed, err := seedFromKube(seed, defaultExposeStrategy)
 		if err != nil {
 			return err
 		}
 		record.Seeds = append(record.Seeds, seed)
 	}
+
+	a.log.Infow("Collected seeds", "seeds", len(record.Seeds))
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		return err
@@ -232,7 +239,7 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 
 	var enableUserSSHKeyAgent bool
 	enableUserSSHKeyAgentPointer := kn.Spec.EnableUserSSHKeyAgent
-	if kn.Spec.EnableUserSSHKeyAgent != nil {
+	if enableUserSSHKeyAgentPointer != nil {
 		enableUserSSHKeyAgent = *enableUserSSHKeyAgentPointer
 	}
 
@@ -303,8 +310,7 @@ func userKeyFromKube(kn kubermaticv1.User) (User, error) {
 }
 
 func generateUUID(x string) string {
-	space, _ := uuid.Parse(uuidSpace)
-	UUID := uuid.NewMD5(space, []byte(x))
+	UUID := uuid.NewMD5(uuid.Nil, []byte(x))
 
 	return UUID.String()
 }
