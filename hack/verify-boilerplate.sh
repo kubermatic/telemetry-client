@@ -21,6 +21,7 @@ cd $(dirname $0)/..
 boilerplate \
   -boilerplates hack/boilerplate/ \
   -exclude pkg/agent/kubernetes/v1/record.go \
+  -exclude pkg/agent/kubernetes/v2/record.go \
   -exclude pkg/agent/kubernetes/kubernetes.go \
   -exclude config/agent/kubernetes/rbac/role.yaml \
   -exclude config/agent/kubermatic/rbac/role.yaml
