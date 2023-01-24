@@ -18,7 +18,7 @@ https://github.com/kubernetes-retired/spartakus/blob/master/pkg/volunteer/kubern
 and some customized fields are added to fit Telemetry own use cases.
 */
 
-package v1
+package v2
 
 import (
 	"fmt"
@@ -64,6 +64,8 @@ type Node struct {
 	// CloudProvider is the <ProviderName> portion of the ProviderID reported
 	// by kubernetes in the node spec.
 	CloudProvider *string `json:"cloud_provider,omitempty"`
+	// ExternalIP is the node's external IP.
+	ExternalIP string `json:"external_ip"`
 	// Capacity is a list of resources and their associated values as reported
 	// by kubernetes in the node status.
 	Capacity []Resource `json:"capacity,omitempty"`

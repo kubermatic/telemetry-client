@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Telemetry Authors.
+Copyright 2023 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
-	v1 "github.com/kubermatic/telemetry-client/pkg/report/v1"
+	v2 "github.com/kubermatic/telemetry-client/pkg/report/v2"
 	"github.com/kubermatic/telemetry-client/pkg/reporter"
 	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
 )
@@ -63,7 +63,7 @@ func (d fileReporter) Report(ctx context.Context) error {
 		files = append(files, info.Name())
 	}
 
-	report := &v1.Report{
+	report := &v2.Report{
 		Version:    telemetryversion.V2Version,
 		Time:       time.Now().UTC(),
 		ClientUUID: d.clientUUID,

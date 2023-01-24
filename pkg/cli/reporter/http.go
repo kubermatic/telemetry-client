@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
-	reporterv1 "github.com/kubermatic/telemetry-client/pkg/reporter/v1"
+	reporterv2 "github.com/kubermatic/telemetry-client/pkg/reporter/v2"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -51,7 +51,7 @@ func newHTTPReporterCommand(log *zap.SugaredLogger) *cobra.Command {
 		Short: "Telemetry http-reporter",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpStore := datastore.NewHTTPStore(flags.url, log)
-			reporter, err := reporterv1.NewFileReporter(httpStore, flags.recordDir, flags.clientUUID)
+			reporter, err := reporterv2.NewFileReporter(httpStore, flags.recordDir, flags.clientUUID)
 			if err != nil {
 				return err
 			}
