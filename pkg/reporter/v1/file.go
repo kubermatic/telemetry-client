@@ -64,7 +64,7 @@ func (d fileReporter) Report(ctx context.Context) error {
 	}
 
 	report := &v1.Report{
-		Version:    telemetryversion.V2Version,
+		Version:    telemetryversion.V1Version,
 		Time:       time.Now().UTC(),
 		ClientUUID: d.clientUUID,
 	}
