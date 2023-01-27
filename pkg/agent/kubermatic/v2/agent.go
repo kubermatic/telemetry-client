@@ -79,7 +79,6 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		return err
 	}
 	// Get Kubermatic Configuration fields
-	record.Domain = config.Spec.Ingress.Domain
 	record.KubermaticEdition = config.Status.KubermaticEdition
 	record.KubermaticVersion = config.Status.KubermaticVersion
 

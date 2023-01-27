@@ -31,9 +31,6 @@ type Record struct {
 	KubermaticEdition string `json:"kubermatic_edition"`
 	// KubermaticVersion is the Kubermatic Release Version.
 	KubermaticVersion string `json:"kubermatic_version"`
-	// Domain is the base domain where the kkp dashboard shall be available. Even with
-	// a disabled Ingress, this must always be a valid hostname.
-	Domain string `json:"domain,omitempty"`
 	// Seeds is a list of seed-specific information.
 	Seeds []Seed `json:"seeds,omitempty"`
 	// Clusters is a list of cluster-specific information.
