@@ -13,7 +13,7 @@
 # limitations under the License.
 
 presubmits:
-  - name: pull-telemetry-client-test
+  - name: pull-kubermatic-telemetry-client-test
     always_run: true
     decorate: true
     clone_uri: ssh://git@github.com/kubermatic/telemetry-client.git
