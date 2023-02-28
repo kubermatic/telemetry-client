@@ -30,8 +30,9 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	kubermaticv1 "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1"
-	"k8c.io/kubermatic/v2/pkg/controller/operator/defaults"
-	"k8c.io/kubermatic/v2/pkg/provider"
+	kubermaticv1helper "k8c.io/kubermatic/v2/pkg/apis/kubermatic/v1/helper"
+	"k8c.io/kubermatic/v2/pkg/defaulting"
+	kubernetesprovider "k8c.io/kubermatic/v2/pkg/provider/kubernetes"
 	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -132,11 +133,11 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 		return fmt.Errorf("failed listing seeds: %w", err)
 	}
 	for _, seed := range seedList.Items {
-		seedKubeconfigGetter, err := provider.SeedKubeconfigGetterFactory(ctx, a.Client)
+		seedKubeconfigGetter, err := kubernetesprovider.SeedKubeconfigGetterFactory(ctx, a.Client)
 		if err != nil {
 			return err
 		}
-		seedClientGetter := provider.SeedClientGetterFactory(seedKubeconfigGetter)
+		seedClientGetter := kubernetesprovider.SeedClientGetterFactory(seedKubeconfigGetter)
 		seedClient, err := seedClientGetter(&seed)
 		if err != nil {
 			return fmt.Errorf("failed getting seed client for seed %s: %w", seed.Name, err)
@@ -186,7 +187,7 @@ func (a kubermaticAgent) getDefaultExposeStrategy(ctx context.Context) (kubermat
 
 	defaultExposeStrategy := kubermaticConfigs.Items[0].Spec.ExposeStrategy
 	if defaultExposeStrategy == "" {
-		defaultExposeStrategy = defaults.DefaultExposeStrategy
+		defaultExposeStrategy = defaulting.DefaultExposeStrategy
 	}
 
 	return defaultExposeStrategy, nil
@@ -197,7 +198,7 @@ func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.Ex
 
 	datacenters := kSeed.Spec.Datacenters
 	for name, datacenter := range datacenters {
-		providerName, err := provider.DatacenterCloudProviderName(&datacenter.Spec)
+		providerName, err := kubermaticv1helper.DatacenterCloudProviderName(&datacenter.Spec)
 		if err != nil {
 			return v1types.Seed{}, err
 		}
@@ -227,7 +228,7 @@ func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.Ex
 }
 
 func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (v1types.Cluster, error) {
-	providerName, err := provider.ClusterCloudProviderName(kn.Spec.Cloud)
+	providerName, err := kubermaticv1helper.ClusterCloudProviderName(kn.Spec.Cloud)
 	if err != nil {
 		return v1types.Cluster{}, err
 	}

@@ -13,14 +13,15 @@
 # limitations under the License.
 
 presubmits:
-  - name: pull-telemetry-client-test
+  - name: pull-kubermatic-telemetry-client-test
     always_run: true
     decorate: true
     clone_uri: ssh://git@github.com/kubermatic/telemetry-client.git
     spec:
       containers:
-        - image: quay.io/kubermatic/build:go-1.18-node-16-1
+        - image: quay.io/kubermatic/build:go-1.19-node-18-8
           command:
             - make
+          args:
             - test
             - verify
