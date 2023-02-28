@@ -24,6 +24,7 @@ import (
 
 	"github.com/kubermatic/telemetry-client/pkg/agent"
 	"github.com/kubermatic/telemetry-client/pkg/agent/kubernetes"
+	v2types "github.com/kubermatic/telemetry-client/pkg/agent/kubernetes/v2/types"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
 
@@ -61,7 +62,7 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 		return err
 	}
 
-	record := Record{
+	record := v2types.Record{
 		KindVersion: agent.KindVersion{
 			Kind:    "kubernetes",
 			Version: telemetryversion.V2Version,
@@ -93,13 +94,13 @@ func (a kubernetesAgent) Collect(ctx context.Context) error {
 	return a.dataStore.Store(ctx, data)
 }
 
-func nodeFromKubeNode(kn corev1.Node) (Node, error) {
+func nodeFromKubeNode(kn corev1.Node) (v2types.Node, error) {
 	id, err := getID(kn)
 	if err != nil {
-		return Node{}, err
+		return v2types.Node{}, err
 	}
 
-	n := Node{
+	n := v2types.Node{
 		ID:                      id,
 		OperatingSystem:         agent.StrPtr(kn.Status.NodeInfo.OperatingSystem),
 		OSImage:                 agent.StrPtr(kn.Status.NodeInfo.OSImage),
@@ -121,7 +122,7 @@ func nodeFromKubeNode(kn corev1.Node) (Node, error) {
 
 	for _, k := range keys {
 		v := kn.Status.Capacity[corev1.ResourceName(k)]
-		n.Capacity = append(n.Capacity, Resource{
+		n.Capacity = append(n.Capacity, v2types.Resource{
 			Resource: k,
 			Value:    v.String(),
 		})

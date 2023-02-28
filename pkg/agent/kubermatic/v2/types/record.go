@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Telemetry Authors.
+Copyright 2023 The Telemetry Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package types
 
 import (
 	"fmt"
@@ -27,8 +27,10 @@ type Record struct {
 	agent.KindVersion
 	// Time is the time when the record is generated.
 	Time time.Time `json:"time"`
-	// Kubernetes version of this cluster.
-	KubernetesVersion string `json:"kubernetes_version"`
+	// KubermaticEdition is the Kubermatic edition type
+	KubermaticEdition string `json:"kubermatic_edition"`
+	// KubermaticVersion is the Kubermatic Release Version.
+	KubermaticVersion string `json:"kubermatic_version"`
 	// Seeds is a list of seed-specific information.
 	Seeds []Seed `json:"seeds,omitempty"`
 	// Clusters is a list of cluster-specific information.
@@ -83,6 +85,9 @@ type Cluster struct {
 	// ProjectUUID helps to uniquely relate this cluster with the owned project
 	ProjectUUID string `json:"project_uuid,omitempty"`
 
+	// CNIPlugin contains the spec of the CNI plugin to be installed in the cluster.
+	CNIPlugin CNIPluginSettings `json:"cni_plugin,omitempty"`
+
 	// ExposeStrategy is the approach we use to expose this cluster, either via NodePort
 	// or via a dedicated LoadBalancer
 	ExposeStrategy string `json:"expose_strategy,omitempty"`
@@ -92,20 +97,42 @@ type Cluster struct {
 	// Version defines the wanted version of the control plane
 	KubernetesServerVersion string `json:"kubernetes_server_version,omitempty"`
 
-	// KubermaticVersion current kubermatic version.
-	KubermaticVersion string `json:"kubermatic_version,omitempty"`
-
 	// Cloud specifies the cloud providers configuration
 	Cloud Cloud `json:"cloud,omitempty"`
 
 	// OPAIntegration is a preview feature that enables OPA integration with Kubermatic for the cluster.
 	OPAIntegrationEnabled bool `json:"opa_integration_enabled"`
 
+	ClusterNetwork ClusterNetworkingConfig `json:"cluster_network"`
+
 	// MLA contains monitoring, logging and alerting related settings for the user cluster.
 	MLA MLASettings `json:"mla,omitempty"`
 
 	// EnableUserSSHKeyAgent control whether the UserSSHKeyAgent will be deployed in the user cluster or not.
 	UserSSHKeyAgentEnabled bool `json:"user_ssh_key_agent_enabled"`
+}
+
+// ClusterNetworkingConfig specifies the different networking
+// parameters for a cluster.
+type ClusterNetworkingConfig struct {
+	// Optional: IP family used for cluster networking. Supported values are "", "IPv4" or "IPv4+IPv6".
+	// Can be omitted / empty if pods and services network ranges are specified.
+	// In that case it defaults according to the IP families of the provided network ranges.
+	// If neither ipFamily nor pods & services network ranges are specified, defaults to "IPv4".
+	// +optional
+	IPFamily string `json:"ip_family,omitempty"`
+
+	// KonnectivityEnabled enables konnectivity for controlplane to node network communication.
+	KonnectivityEnabled bool `json:"konnectivity_enabled,omitempty"`
+}
+
+// CNIPluginSettings contains the spec of the CNI plugin used by the Cluster.
+type CNIPluginSettings struct {
+	// Type defines the type of CNI plugin installed.
+	// Possible values are `canal`, `cilium` or `none`.
+	Type string `json:"type"`
+	// Version defines the CNI plugin version to be used. This varies by chosen CNI plugin type.
+	Version string `json:"version"`
 }
 
 type Cloud struct {

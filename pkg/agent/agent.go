@@ -20,8 +20,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-
-	"k8s.io/utils/pointer"
 )
 
 type Agent interface {
@@ -42,5 +40,5 @@ func StrPtr(str string) *string {
 		return nil
 	}
 
-	return pointer.String(str)
+	return &str
 }

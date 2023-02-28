@@ -18,7 +18,7 @@ https://github.com/kubernetes-retired/spartakus/blob/master/pkg/volunteer/kubern
 and some customized fields are added to fit Telemetry own use cases.
 */
 
-package v1
+package types
 
 import (
 	"fmt"

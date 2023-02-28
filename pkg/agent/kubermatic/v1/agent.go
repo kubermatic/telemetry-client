@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/kubermatic/telemetry-client/pkg/agent"
+	v1types "github.com/kubermatic/telemetry-client/pkg/agent/kubermatic/v1/types"
 	"github.com/kubermatic/telemetry-client/pkg/datastore"
 	telemetryversion "github.com/kubermatic/telemetry-client/pkg/version"
 
@@ -63,7 +64,7 @@ func (a kubermaticAgent) Collect(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	record := Record{
+	record := v1types.Record{
 		KindVersion: agent.KindVersion{
 			Kind:    "kubermatic",
 			Version: telemetryversion.V1Version,
@@ -191,17 +192,17 @@ func (a kubermaticAgent) getDefaultExposeStrategy(ctx context.Context) (kubermat
 	return defaultExposeStrategy, nil
 }
 
-func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.ExposeStrategy) (Seed, error) {
-	var kDatacenter []Datacenter
+func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.ExposeStrategy) (v1types.Seed, error) {
+	var kDatacenter []v1types.Datacenter
 
 	datacenters := kSeed.Spec.Datacenters
 	for name, datacenter := range datacenters {
 		providerName, err := provider.DatacenterCloudProviderName(&datacenter.Spec)
 		if err != nil {
-			return Seed{}, err
+			return v1types.Seed{}, err
 		}
 
-		kDatacenter = append(kDatacenter, Datacenter{
+		kDatacenter = append(kDatacenter, v1types.Datacenter{
 			UUID:     generateUUID(name),
 			Country:  datacenter.Country,
 			Location: datacenter.Location,
@@ -214,7 +215,7 @@ func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.Ex
 	if exposeStrategy == "" {
 		exposeStrategy = defaultExposeStrategy
 	}
-	seed := Seed{
+	seed := v1types.Seed{
 		UUID:           generateUUID(kSeed.Name),
 		Country:        kSeed.Spec.Country,
 		Location:       kSeed.Spec.Location,
@@ -225,10 +226,10 @@ func seedFromKube(kSeed kubermaticv1.Seed, defaultExposeStrategy kubermaticv1.Ex
 	return seed, nil
 }
 
-func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) {
+func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (v1types.Cluster, error) {
 	providerName, err := provider.ClusterCloudProviderName(kn.Spec.Cloud)
 	if err != nil {
-		return Cluster{}, err
+		return v1types.Cluster{}, err
 	}
 
 	var opaEnabled bool
@@ -243,7 +244,7 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 		enableUserSSHKeyAgent = *enableUserSSHKeyAgentPointer
 	}
 
-	var mla MLASettings
+	var mla v1types.MLASettings
 	mlaSetting := kn.Spec.MLA
 	if mlaSetting != nil {
 		mla.MonitoringEnabled = mlaSetting.MonitoringEnabled
@@ -254,14 +255,14 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 	if kn.Spec.ComponentsOverride.Etcd.ClusterSize != nil {
 		etcdSize = int(*kn.Spec.ComponentsOverride.Etcd.ClusterSize)
 	}
-	cluster := Cluster{
+	cluster := v1types.Cluster{
 		UUID:                    generateUUID(kn.Name),
 		SeedUUID:                generateUUID(seedName),
 		ProjectUUID:             generateUUID(kn.Labels[kubermaticv1.ProjectIDLabelKey]),
 		ExposeStrategy:          string(kn.Spec.ExposeStrategy),
 		EtcdClusterSize:         etcdSize,
 		KubernetesServerVersion: kn.Spec.Version.String(),
-		Cloud: Cloud{
+		Cloud: v1types.Cloud{
 			ProviderName:   providerName,
 			DatacenterUUID: generateUUID(kn.Spec.Cloud.DatacenterName),
 		},
@@ -272,14 +273,14 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (Cluster, error) 
 	return cluster, nil
 }
 
-func projectFromKube(kn kubermaticv1.Project) (Project, error) {
-	project := Project{
+func projectFromKube(kn kubermaticv1.Project) (v1types.Project, error) {
+	project := v1types.Project{
 		UUID: generateUUID(kn.Name),
 	}
 	return project, nil
 }
 
-func sshKeyFromKube(kn kubermaticv1.UserSSHKey) (SSHKey, error) {
+func sshKeyFromKube(kn kubermaticv1.UserSSHKey) (v1types.SSHKey, error) {
 	var ownerProject string
 	for _, ownerReference := range kn.OwnerReferences {
 		if ownerReference.Kind == kubermaticv1.ProjectKindName {
@@ -293,7 +294,7 @@ func sshKeyFromKube(kn kubermaticv1.UserSSHKey) (SSHKey, error) {
 		clusters = append(clusters, generateUUID(cluster))
 	}
 
-	SSHKey := SSHKey{
+	SSHKey := v1types.SSHKey{
 		UUID:             generateUUID(kn.Name),
 		OwnerProjectUUID: ownerProject,
 		ClusterUUIDs:     clusters,
@@ -301,8 +302,8 @@ func sshKeyFromKube(kn kubermaticv1.UserSSHKey) (SSHKey, error) {
 	return SSHKey, nil
 }
 
-func userKeyFromKube(kn kubermaticv1.User) (User, error) {
-	user := User{
+func userKeyFromKube(kn kubermaticv1.User) (v1types.User, error) {
+	user := v1types.User{
 		UUID:    generateUUID(kn.Name),
 		IsAdmin: kn.Spec.IsAdmin,
 	}
