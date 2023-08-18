@@ -31,8 +31,6 @@ if [ -z "$TAGS" ]; then
   exit 1
 fi
 
-apt install time -y
-
 echo "Logging into Quay"
 start-docker.sh
 docker login -u "$QUAY_IO_USERNAME" -p "$QUAY_IO_PASSWORD" quay.io
