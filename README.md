@@ -16,7 +16,6 @@ Feedback and discussion are available on [the mailing list][11].
 
 * Please familiarize yourself with the [Code of Conduct][4] before contributing.
 * See [CONTRIBUTING.md][2] for instructions on the developer certificate of origin that we require.
-* Read how [we're using ZenHub][13] for project and roadmap planning
 
 ### Pull requests
 
@@ -27,11 +26,10 @@ Feedback and discussion are available on [the mailing list][11].
 See [the list of releases][3] to find out about feature changes.
 
 [1]: https://github.com/kubermatic/telemetry-client/issues
-[2]: https://github.com/kubermatic/telemetry-client/blob/master/CONTRIBUTING.md
+[2]: https://github.com/kubermatic/telemetry-client/blob/main/CONTRIBUTING.md
 [3]: https://github.com/kubermatic/telemetry-client/releases
-[4]: https://github.com/kubermatic/telemetry-client/blob/master/CODE_OF_CONDUCT.md
+[4]: https://github.com/kubermatic/telemetry-client/blob/main/CODE_OF_CONDUCT.md
 
 [11]: https://groups.google.com/forum/#!forum/kubermatic-dev
 [12]: https://kubermatic.slack.com/messages/kubermatic
-[13]: https://github.com/kubermatic/telemetry-client/blob/master/Zenhub.md
 [15]: http://slack.kubermatic.io/
