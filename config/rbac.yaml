@@ -47,7 +47,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: kubermatic-agent-role
 rules:
 - apiGroups:
@@ -71,7 +70,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: kubernetes-agent-role
 rules:
 - apiGroups:
