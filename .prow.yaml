@@ -19,7 +19,7 @@ presubmits:
     clone_uri: ssh://git@github.com/kubermatic/telemetry-client.git
     spec:
       containers:
-        - image: quay.io/kubermatic/build:go-1.21-node-18-1
+        - image: quay.io/kubermatic/build:go-1.21-node-18-11
           command:
             - make
           args:

@@ -236,7 +236,10 @@ func clusterFromKube(kn kubermaticv1.Cluster, seedName string) (v2types.Cluster,
 	var clusterNetworkingConfig v2types.ClusterNetworkingConfig
 	clusterNetwork := kn.Spec.ClusterNetwork
 	clusterNetworkingConfig.IPFamily = string(clusterNetwork.IPFamily)
+
+	//nolint:staticcheck
 	if clusterNetwork.KonnectivityEnabled != nil {
+		//nolint:staticcheck
 		clusterNetworkingConfig.KonnectivityEnabled = *clusterNetwork.KonnectivityEnabled
 	}
 
