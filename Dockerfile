@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/distroless/static-debian12
-LABEL maintainer="support@kubermatic.com"
+FROM gcr.io/distroless/static-debian12:nonroot
+LABEL org.opencontainers.image.source="https://github.com/kubermatic/telemetry-client/blob/main/Dockerfile"
+LABEL org.opencontainers.image.vendor="Kubermatic"
+LABEL org.opencontainers.image.authors="support@kubermatic.com"
 
 COPY ./_build /usr/local/bin/
-USER nobody
